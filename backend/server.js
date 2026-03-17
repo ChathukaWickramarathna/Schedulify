@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const { errorHandler } = require("./middleware/errorMiddleware");
 const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
 
 dotenv.config();
 
@@ -24,6 +25,8 @@ app.get("/", (req, res) => {
 
 // Auth routes
 app.use("/api/auth", authRoutes);
+// User management routes (admin)
+app.use("/api/users", userRoutes);
 
 // Custom error handler (should be after routes)
 app.use(errorHandler);
