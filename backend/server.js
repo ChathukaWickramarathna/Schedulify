@@ -8,6 +8,7 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
 const resourceRoutes = require("./routes/resourceRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
 
 dotenv.config();
 
@@ -33,6 +34,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/bookings", bookingRoutes);
 // Resource management routes (services, staff, rooms)
 app.use("/api/resources", resourceRoutes);
+// Dashboard routes
+app.use("/api/dashboard", dashboardRoutes);
 
 // Custom error handler (should be after routes)
 app.use(errorHandler);
