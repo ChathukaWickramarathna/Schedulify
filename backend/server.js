@@ -7,6 +7,7 @@ const { errorHandler } = require("./middleware/errorMiddleware");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const bookingRoutes = require("./routes/bookingRoutes");
+const resourceRoutes = require("./routes/resourceRoutes");
 
 dotenv.config();
 
@@ -30,6 +31,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 // Booking routes
 app.use("/api/bookings", bookingRoutes);
+// Resource management routes (services, staff, rooms)
+app.use("/api/resources", resourceRoutes);
 
 // Custom error handler (should be after routes)
 app.use(errorHandler);
