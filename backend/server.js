@@ -3,6 +3,8 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 
 const connectDB = require("./config/db");
+const { errorHandler } = require("./middleware/errorMiddleware");
+const authRoutes = require("./routes/authRoutes");
 
 dotenv.config();
 
@@ -20,16 +22,11 @@ app.get("/", (req, res) => {
   res.send("Schedulify API is running...");
 });
 
-// Placeholder route imports (we will add these modules later)
-// Example:
-// const authRoutes = require("./routes/authRoutes");
-// app.use("/api/auth", authRoutes);
+// Auth routes
+app.use("/api/auth", authRoutes);
 
-// Error middleware placeholder (optional)
-// app.use((err, req, res, next) => {
-//   console.error(err);
-//   res.status(500).json({ message: "Server error" });
-// });
+// Custom error handler (should be after routes)
+app.use(errorHandler);
 
 // Port
 const PORT = process.env.PORT || 5000;
