@@ -5,6 +5,10 @@ import LoginPage from "../pages/Auth/LoginPage";
 import RegisterPage from "../pages/Auth/RegisterPage";
 import BookAppointment from "../pages/BookAppointment";
 import MyBookings from "../pages/MyBookings";
+import AdminDashboard from "../pages/Admin/AdminDashboard";
+import ManageServices from "../pages/Admin/ManageServices";
+import ManageStaff from "../pages/Admin/ManageStaff";
+import ManageRooms from "../pages/Admin/ManageRooms";
 
 // Route placeholders (real pages will be created later)
 const Placeholder = ({ title }) => {
@@ -50,19 +54,42 @@ export default function AppRoutes() {
         path="/admin/dashboard"
         element={
           <ProtectedRoute
-            element={<Placeholder title="Admin Dashboard" />}
+            element={<AdminDashboard />}
             requiredRoles={["ADMIN"]}
           />
         }
       />
       <Route
-        path="/admin/resources"
+        path="/admin/services"
         element={
           <ProtectedRoute
-            element={<Placeholder title="Manage Resources" />}
+            element={<ManageServices />}
             requiredRoles={["ADMIN"]}
           />
         }
+      />
+      <Route
+        path="/admin/staff"
+        element={
+          <ProtectedRoute
+            element={<ManageStaff />}
+            requiredRoles={["ADMIN"]}
+          />
+        }
+      />
+      <Route
+        path="/admin/rooms"
+        element={
+          <ProtectedRoute
+            element={<ManageRooms />}
+            requiredRoles={["ADMIN"]}
+          />
+        }
+      />
+      {/* Legacy admin resource route - redirect to dashboard */}
+      <Route
+        path="/admin/resources"
+        element={<Navigate to="/admin/dashboard" replace />}
       />
 
       {/* Access */}
