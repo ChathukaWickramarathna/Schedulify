@@ -3,6 +3,8 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
 import LoginPage from "../pages/Auth/LoginPage";
 import RegisterPage from "../pages/Auth/RegisterPage";
+import BookAppointment from "../pages/BookAppointment";
+import MyBookings from "../pages/MyBookings";
 
 // Route placeholders (real pages will be created later)
 const Placeholder = ({ title }) => {
@@ -35,14 +37,12 @@ export default function AppRoutes() {
       <Route
         path="/book-appointment"
         element={
-          <ProtectedRoute
-            element={<Placeholder title="Book Appointment" />}
-          />
+          <ProtectedRoute element={<BookAppointment />} />
         }
       />
       <Route
         path="/my-bookings"
-        element={<ProtectedRoute element={<Placeholder title="My Bookings" />} />}
+        element={<ProtectedRoute element={<MyBookings />} />}
       />
 
       {/* Admin - Protected Routes with Role Check */}
