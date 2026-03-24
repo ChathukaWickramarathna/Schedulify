@@ -122,7 +122,8 @@ export const getUserRole = () => {
  */
 export const hasRole = (requiredRole) => {
   const userRole = getUserRole();
-  return userRole === requiredRole;
+  // Case-insensitive comparison (backend uses lowercase, frontend might use uppercase)
+  return userRole?.toLowerCase() === requiredRole?.toLowerCase();
 };
 
 /**
@@ -132,5 +133,7 @@ export const hasRole = (requiredRole) => {
  */
 export const hasAnyRole = (roles) => {
   const userRole = getUserRole();
-  return Array.isArray(roles) && roles.includes(userRole);
+  if (!Array.isArray(roles) || !userRole) return false;
+  // Case-insensitive comparison
+  return roles.some(role => role?.toLowerCase() === userRole?.toLowerCase());
 };

@@ -71,11 +71,11 @@ export function AuthProvider({ children }) {
 
       // Verify token is still valid on the server
       try {
-        const response = await api.get("/auth/verify", {
+        const response = await api.get("/auth/me", {
           headers: { Authorization: `Bearer ${storedToken}` },
         });
 
-        if (response.data.valid) {
+        if (response.data.user) {
           setToken(storedToken);
           setUser(storedUser);
         } else {
