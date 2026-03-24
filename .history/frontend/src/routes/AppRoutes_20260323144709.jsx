@@ -1,8 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
-import LoginPage from "../pages/Auth/LoginPage";
-import RegisterPage from "../pages/Auth/RegisterPage";
 
 // Route placeholders (real pages will be created later)
 const Placeholder = ({ title }) => {
@@ -22,8 +20,8 @@ export default function AppRoutes() {
       <Route path="/" element={<Navigate to="/login" replace />} />
 
       {/* Auth */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/login" element={<Placeholder title="Login" />} />
+      <Route path="/register" element={<Placeholder title="Register" />} />
 
       {/* User - Protected Routes */}
       <Route
