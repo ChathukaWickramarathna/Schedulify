@@ -281,7 +281,7 @@ const ManageStaff = () => {
               onClick={() => setShowModal(false)}
             ></div>
 
-            <div className="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div className="relative z-10 inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <form onSubmit={handleSubmit}>
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
                   <div className="flex items-center justify-between">
