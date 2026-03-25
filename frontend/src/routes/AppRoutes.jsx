@@ -3,6 +3,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
 import LoginPage from "../pages/Auth/LoginPage";
 import RegisterPage from "../pages/Auth/RegisterPage";
+import Dashboard from "../pages/Dashboard";
 import BookAppointment from "../pages/BookAppointment";
 import MyBookings from "../pages/MyBookings";
 import AdminDashboard from "../pages/Admin/AdminDashboard";
@@ -35,7 +36,7 @@ export default function AppRoutes() {
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute element={<Placeholder title="Dashboard" />} />
+          <ProtectedRoute element={<Dashboard />} />
         }
       />
       <Route
