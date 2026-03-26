@@ -10,6 +10,7 @@ import AdminDashboard from "../pages/Admin/AdminDashboard";
 import ManageServices from "../pages/Admin/ManageServices";
 import ManageStaff from "../pages/Admin/ManageStaff";
 import ManageRooms from "../pages/Admin/ManageRooms";
+import ManageUsers from "../pages/Admin/ManageUsers";
 
 // Route placeholders (real pages will be created later)
 const Placeholder = ({ title }) => {
@@ -83,6 +84,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute
             element={<ManageRooms />}
+            requiredRoles={["ADMIN"]}
+          />
+        }
+      />
+      <Route
+        path="/admin/users"
+        element={
+          <ProtectedRoute
+            element={<ManageUsers />}
             requiredRoles={["ADMIN"]}
           />
         }

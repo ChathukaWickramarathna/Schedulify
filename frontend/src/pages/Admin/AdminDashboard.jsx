@@ -102,6 +102,24 @@ const AdminDashboard = () => {
       bgColor: "bg-green-50",
       textColor: "text-green-600",
     },
+    {
+      title: "Manage Users",
+      description: "View all users, change roles, and manage access permissions",
+      icon: (
+        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+          />
+        </svg>
+      ),
+      link: "/admin/users",
+      color: "from-orange-500 to-red-500",
+      bgColor: "bg-orange-50",
+      textColor: "text-orange-600",
+    },
   ];
 
   // Chart data for booking status
@@ -326,7 +344,7 @@ const AdminDashboard = () => {
         {/* Management Cards */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Resource Management</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
             {adminCards.map((card, index) => (
               <Link
                 key={index}
@@ -402,6 +420,12 @@ const AdminDashboard = () => {
                   <span className="font-semibold mr-2">•</span>
                   <span>
                     <strong>Rooms:</strong> Register physical spaces where services will be provided.
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <span className="font-semibold mr-2">•</span>
+                  <span>
+                    <strong>Users:</strong> Manage user accounts and change roles. Promote users to staff or admin positions.
                   </span>
                 </li>
               </ul>
