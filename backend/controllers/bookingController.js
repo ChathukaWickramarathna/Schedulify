@@ -402,15 +402,18 @@ const updateBooking = async (req, res) => {
     }
 
     const updated = await booking.save();
-    const populated = await updated
-      .populate("service", "name duration")
-      .populate("assignedStaff", "name email")
-      .populate("room", "name location")
-      .populate("user", "name email role");
+
+    // Populate the booking with related data
+    await updated.populate([
+      { path: "service", select: "name duration" },
+      { path: "assignedStaff", select: "name email" },
+      { path: "room", select: "name location" },
+      { path: "user", select: "name email role" }
+    ]);
 
     return res.json({
       message: "Booking updated successfully",
-      booking: populated,
+      booking: updated,
     });
   } catch (error) {
     console.error("Update booking error:", error);

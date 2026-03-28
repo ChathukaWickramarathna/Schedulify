@@ -12,7 +12,7 @@ const {
   getAvailableSlots,
 } = require("../controllers/bookingController");
 const { protect } = require("../middleware/authMiddleware");
-const { allowRoles, denyRoles } = require("../middleware/roleMiddleware");
+const { allowRoles } = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
