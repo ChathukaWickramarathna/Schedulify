@@ -6,6 +6,8 @@ import RegisterPage from "../pages/Auth/RegisterPage";
 import Dashboard from "../pages/Dashboard";
 import BookAppointment from "../pages/BookAppointment";
 import MyBookings from "../pages/MyBookings";
+import StaffDashboard from "../pages/Staff/StaffDashboard";
+import ManageBookings from "../pages/Staff/ManageBookings";
 import AdminDashboard from "../pages/Admin/AdminDashboard";
 import ManageServices from "../pages/Admin/ManageServices";
 import ManageStaff from "../pages/Admin/ManageStaff";
@@ -49,6 +51,26 @@ export default function AppRoutes() {
       <Route
         path="/my-bookings"
         element={<ProtectedRoute element={<MyBookings />} />}
+      />
+
+      {/* Staff - Protected Routes with Role Check */}
+      <Route
+        path="/staff/dashboard"
+        element={
+          <ProtectedRoute
+            element={<StaffDashboard />}
+            requiredRoles={["STAFF", "ADMIN"]}
+          />
+        }
+      />
+      <Route
+        path="/staff/manage-bookings"
+        element={
+          <ProtectedRoute
+            element={<ManageBookings />}
+            requiredRoles={["STAFF", "ADMIN"]}
+          />
+        }
       />
 
       {/* Admin - Protected Routes with Role Check */}

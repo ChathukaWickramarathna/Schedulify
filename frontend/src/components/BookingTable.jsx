@@ -5,6 +5,15 @@ import { format, parseISO } from "date-fns";
 const BookingTable = ({ bookings, onBookingUpdate, showUserInfo = false }) => {
   const [cancellingId, setCancellingId] = useState(null);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [editForm, setEditForm] = useState({
+    date: "",
+    startTime: "",
+    endTime: "",
+    notes: "",
+  });
 
   // Format date
   const formatDate = (dateString) => {
@@ -70,6 +79,44 @@ const BookingTable = ({ bookings, onBookingUpdate, showUserInfo = false }) => {
     return booking.status === "pending" || booking.status === "approved";
   };
 
+  // Check if booking can be edited (only pending bookings)
+  const canEdit = (booking) => {
+    return booking.status === "pending";
+  };
+
+  // Open edit modal
+  const openEditModal = (booking) => {
+    setSelectedBooking(booking);
+    setEditForm({
+      date: format(parseISO(booking.date), "yyyy-MM-dd"),
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      notes: booking.notes || "",
+    });
+    setShowEditModal(true);
+  };
+
+  // Handle edit booking
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setError("");
+      setSuccess("");
+      await api.put(`/bookings/${selectedBooking._id}`, editForm);
+      setSuccess("Booking updated successfully");
+      setShowEditModal(false);
+
+      // Notify parent component to refresh bookings
+      if (onBookingUpdate) {
+        onBookingUpdate();
+      }
+
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update booking");
+    }
+  };
+
   // Handle cancel booking
   const handleCancel = async (bookingId) => {
     if (!window.confirm("Are you sure you want to cancel this booking?")) {
@@ -124,6 +171,13 @@ const BookingTable = ({ bookings, onBookingUpdate, showUserInfo = false }) => {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
           <p className="text-sm font-medium">{error}</p>
+        </div>
+      )}
+
+      {/* Success Message */}
+      {success && (
+        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+          <p className="text-sm font-medium">{success}</p>
         </div>
       )}
 
@@ -207,7 +261,15 @@ const BookingTable = ({ bookings, onBookingUpdate, showUserInfo = false }) => {
                     )}
                   </td>
                   <td className="px-6 py-4">{getStatusBadge(booking.status)}</td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right space-x-2">
+                    {canEdit(booking) && (
+                      <button
+                        onClick={() => openEditModal(booking)}
+                        className="text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+                      >
+                        Edit
+                      </button>
+                    )}
                     {canCancel(booking) && (
                       <button
                         onClick={() => handleCancel(booking._id)}
@@ -332,24 +394,129 @@ const BookingTable = ({ bookings, onBookingUpdate, showUserInfo = false }) => {
                 </div>
               )}
 
-              {/* Cancel Button */}
-              {canCancel(booking) && (
-                <div className="pt-3 border-t border-gray-200">
-                  <button
-                    onClick={() => handleCancel(booking._id)}
-                    disabled={cancellingId === booking._id}
-                    className="w-full bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {cancellingId === booking._id
-                      ? "Cancelling..."
-                      : "Cancel Booking"}
-                  </button>
+              {/* Action Buttons */}
+              {(canEdit(booking) || canCancel(booking)) && (
+                <div className="pt-3 border-t border-gray-200 space-y-2">
+                  {canEdit(booking) && (
+                    <button
+                      onClick={() => openEditModal(booking)}
+                      className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                    >
+                      Edit Booking
+                    </button>
+                  )}
+                  {canCancel(booking) && (
+                    <button
+                      onClick={() => handleCancel(booking._id)}
+                      disabled={cancellingId === booking._id}
+                      className="w-full bg-red-50 hover:bg-red-100 text-red-600 px-4 py-2 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {cancellingId === booking._id
+                        ? "Cancelling..."
+                        : "Cancel Booking"}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Edit Modal */}
+      {showEditModal && selectedBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="relative z-10 bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 rounded-t-2xl">
+              <h3 className="text-2xl font-bold text-white">Edit Booking</h3>
+              <p className="text-sm text-blue-100 mt-1">
+                {selectedBooking.service?.name}
+              </p>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Time
+                    </label>
+                    <input
+                      type="time"
+                      value={editForm.startTime}
+                      onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Time
+                    </label>
+                    <input
+                      type="time"
+                      value={editForm.endTime}
+                      onChange={(e) => setEditForm({ ...editForm, endTime: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={editForm.notes}
+                    onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Add any notes or special requests..."
+                  />
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> You can only edit pending bookings. After approval, please
+                  contact staff for any changes.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-medium transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

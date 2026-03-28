@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
-import { hasRole } from "../../utils/tokenHelper";
+import { hasRole, hasAnyRole } from "../../utils/tokenHelper";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -99,39 +99,71 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           {isAuthenticated ? (
             <div className="hidden md:flex md:items-center md:space-x-4">
-              {/* Navigation Links */}
-              <Link
-                to="/dashboard"
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive("/dashboard")
-                    ? "bg-slate-800 text-white"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                }`}
-              >
-                Dashboard
-              </Link>
+              {/* Navigation Links - Show based on role */}
+              {/* User-only links */}
+              {hasRole("USER") && !hasAnyRole(["STAFF", "ADMIN"]) && (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive("/dashboard")
+                        ? "bg-slate-800 text-white"
+                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    }`}
+                  >
+                    Dashboard
+                  </Link>
 
-              <Link
-                to="/book-appointment"
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive("/book-appointment")
-                    ? "bg-slate-800 text-white"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                }`}
-              >
-                Book Appointment
-              </Link>
+                  <Link
+                    to="/book-appointment"
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive("/book-appointment")
+                        ? "bg-slate-800 text-white"
+                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    }`}
+                  >
+                    Book Appointment
+                  </Link>
 
-              <Link
-                to="/my-bookings"
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive("/my-bookings")
-                    ? "bg-slate-800 text-white"
-                    : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                }`}
-              >
-                My Bookings
-              </Link>
+                  <Link
+                    to="/my-bookings"
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive("/my-bookings")
+                        ? "bg-slate-800 text-white"
+                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    }`}
+                  >
+                    My Bookings
+                  </Link>
+                </>
+              )}
+
+              {/* Staff-only links */}
+              {hasRole("STAFF") && !hasRole("ADMIN") && (
+                <>
+                  <Link
+                    to="/staff/dashboard"
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive("/staff/dashboard")
+                        ? "bg-slate-800 text-white"
+                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    }`}
+                  >
+                    Staff Dashboard
+                  </Link>
+
+                  <Link
+                    to="/staff/manage-bookings"
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive("/staff/manage-bookings")
+                        ? "bg-slate-800 text-white"
+                        : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                    }`}
+                  >
+                    Manage Bookings
+                  </Link>
+                </>
+              )}
 
               {/* Admin Link - Only show to admins */}
               {hasRole("ADMIN") && (
@@ -352,38 +384,70 @@ export default function Navbar() {
               </div>
 
               {/* Navigation Links */}
-              <Link
-                to="/dashboard"
-                className={`block px-3 py-2 rounded-lg text-base font-medium ${
-                  isActive("/dashboard")
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-300 hover:bg-slate-700 hover:text-white"
-                }`}
-              >
-                Dashboard
-              </Link>
+              {/* User-only links */}
+              {hasRole("USER") && !hasAnyRole(["STAFF", "ADMIN"]) && (
+                <>
+                  <Link
+                    to="/dashboard"
+                    className={`block px-3 py-2 rounded-lg text-base font-medium ${
+                      isActive("/dashboard")
+                        ? "bg-slate-900 text-white"
+                        : "text-slate-300 hover:bg-slate-700 hover:text-white"
+                    }`}
+                  >
+                    Dashboard
+                  </Link>
 
-              <Link
-                to="/book-appointment"
-                className={`block px-3 py-2 rounded-lg text-base font-medium ${
-                  isActive("/book-appointment")
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-300 hover:bg-slate-700 hover:text-white"
-                }`}
-              >
-                Book Appointment
-              </Link>
+                  <Link
+                    to="/book-appointment"
+                    className={`block px-3 py-2 rounded-lg text-base font-medium ${
+                      isActive("/book-appointment")
+                        ? "bg-slate-900 text-white"
+                        : "text-slate-300 hover:bg-slate-700 hover:text-white"
+                    }`}
+                  >
+                    Book Appointment
+                  </Link>
 
-              <Link
-                to="/my-bookings"
-                className={`block px-3 py-2 rounded-lg text-base font-medium ${
-                  isActive("/my-bookings")
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-300 hover:bg-slate-700 hover:text-white"
-                }`}
-              >
-                My Bookings
-              </Link>
+                  <Link
+                    to="/my-bookings"
+                    className={`block px-3 py-2 rounded-lg text-base font-medium ${
+                      isActive("/my-bookings")
+                        ? "bg-slate-900 text-white"
+                        : "text-slate-300 hover:bg-slate-700 hover:text-white"
+                    }`}
+                  >
+                    My Bookings
+                  </Link>
+                </>
+              )}
+
+              {/* Staff-only links */}
+              {hasRole("STAFF") && !hasRole("ADMIN") && (
+                <>
+                  <Link
+                    to="/staff/dashboard"
+                    className={`block px-3 py-2 rounded-lg text-base font-medium ${
+                      isActive("/staff/dashboard")
+                        ? "bg-slate-900 text-white"
+                        : "text-slate-300 hover:bg-slate-700 hover:text-white"
+                    }`}
+                  >
+                    Staff Dashboard
+                  </Link>
+
+                  <Link
+                    to="/staff/manage-bookings"
+                    className={`block px-3 py-2 rounded-lg text-base font-medium ${
+                      isActive("/staff/manage-bookings")
+                        ? "bg-slate-900 text-white"
+                        : "text-slate-300 hover:bg-slate-700 hover:text-white"
+                    }`}
+                  >
+                    Manage Bookings
+                  </Link>
+                </>
+              )}
 
               {hasRole("ADMIN") && (
                 <Link

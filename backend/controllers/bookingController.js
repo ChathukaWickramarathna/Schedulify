@@ -305,6 +305,151 @@ const rejectBooking = async (req, res) => {
 };
 
 /**
+ * @desc    Update a booking (admin/staff can edit any, user can edit own pending)
+ * @route   PUT /api/bookings/:id
+ * @access  Private
+ */
+const updateBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const isOwner = booking.user.toString() === req.user.id;
+    const isAdminOrStaff = ["admin", "staff"].includes(req.user.role);
+
+    // Users can only edit their own pending bookings
+    if (isOwner && booking.status !== "pending") {
+      return res.status(403).json({
+        message: "You can only edit pending bookings. This booking is already " + booking.status,
+      });
+    }
+
+    // Check permission
+    if (!isOwner && !isAdminOrStaff) {
+      return res.status(403).json({
+        message: "You are not allowed to edit this booking",
+      });
+    }
+
+    const {
+      service: serviceId,
+      assignedStaff: staffId,
+      room: roomId,
+      date,
+      startTime,
+      endTime,
+      notes,
+      status,
+    } = req.body;
+
+    // Validate service if provided
+    if (serviceId) {
+      const service = await Service.findById(serviceId);
+      if (!service || !service.isActive) {
+        return res.status(400).json({ message: "Selected service is not valid" });
+      }
+      booking.service = serviceId;
+    }
+
+    // Validate staff if provided
+    if (staffId) {
+      const staff = await Staff.findById(staffId);
+      if (!staff || !staff.isAvailable) {
+        return res.status(400).json({ message: "Selected staff member is not available" });
+      }
+      booking.assignedStaff = staffId;
+    }
+
+    // Validate room if provided
+    if (roomId) {
+      const room = await Room.findById(roomId);
+      if (!room || !room.isAvailable) {
+        return res.status(400).json({ message: "Selected room is not available" });
+      }
+      booking.room = roomId;
+    }
+
+    // Update date and time if provided
+    if (date) booking.date = new Date(date);
+    if (startTime) booking.startTime = startTime;
+    if (endTime) booking.endTime = endTime;
+    if (notes !== undefined) booking.notes = notes;
+
+    // Only admin/staff can change status
+    if (status && isAdminOrStaff) {
+      booking.status = status;
+    }
+
+    // Check for conflicts if date/time changed
+    if (date || startTime || endTime || staffId || roomId) {
+      const conflict = await hasBookingConflict(Booking, {
+        date: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        roomId: booking.room,
+        staffId: booking.assignedStaff,
+        excludeBookingId: booking._id,
+      });
+
+      if (conflict) {
+        return res.status(400).json({
+          message: "This time slot conflicts with another booking. Please choose another slot.",
+        });
+      }
+    }
+
+    const updated = await booking.save();
+    const populated = await updated
+      .populate("service", "name duration")
+      .populate("assignedStaff", "name email")
+      .populate("room", "name location")
+      .populate("user", "name email role");
+
+    return res.json({
+      message: "Booking updated successfully",
+      booking: populated,
+    });
+  } catch (error) {
+    console.error("Update booking error:", error);
+    return res.status(500).json({
+      message: "Server error while updating booking",
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * @desc    Delete a booking (admin/staff only)
+ * @route   DELETE /api/bookings/:id
+ * @access  Private/Admin,Staff
+ */
+const deleteBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id);
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    await Booking.findByIdAndDelete(req.params.id);
+
+    return res.json({
+      message: "Booking deleted successfully",
+      bookingId: req.params.id,
+    });
+  } catch (error) {
+    console.error("Delete booking error:", error);
+    return res.status(500).json({
+      message: "Server error while deleting booking",
+      error: error.message,
+    });
+  }
+};
+
+/**
  * @desc    Get available time slots for a given date/service (and optional staff/room)
  * @route   GET /api/bookings/available-slots
  * @access  Private
@@ -402,6 +547,8 @@ module.exports = {
   createBooking,
   getMyBookings,
   getAllBookings,
+  updateBooking,
+  deleteBooking,
   cancelBooking,
   approveBooking,
   rejectBooking,
