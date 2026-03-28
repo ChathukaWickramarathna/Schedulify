@@ -61,14 +61,16 @@ const ManageBookings = () => {
 
     // Search filter
     if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
+      const term = searchTerm.toLowerCase().trim();
       filtered = filtered.filter(
         (booking) =>
+          // Partial match for user name and email (e.g., "john" finds "John Doe")
           booking.user?.name?.toLowerCase().includes(term) ||
           booking.user?.email?.toLowerCase().includes(term) ||
-          booking.service?.name?.toLowerCase().includes(term) ||
-          booking.assignedStaff?.name?.toLowerCase().includes(term) ||
-          booking.room?.name?.toLowerCase().includes(term)
+          // Exact match for service, staff, and room names
+          booking.service?.name?.toLowerCase() === term ||
+          booking.assignedStaff?.name?.toLowerCase() === term ||
+          booking.room?.name?.toLowerCase() === term
       );
     }
 
