@@ -70,13 +70,23 @@ export default function Navbar() {
       .slice(0, 2);
   };
 
+  /**
+   * Get home route based on user role
+   */
+  const getHomeRoute = () => {
+    if (!isAuthenticated) return "/login";
+    if (hasRole("ADMIN")) return "/admin/dashboard";
+    if (hasRole("STAFF")) return "/staff/dashboard";
+    return "/dashboard"; // Default for USER
+  };
+
   return (
     <nav className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to={getHomeRoute()} className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-white"

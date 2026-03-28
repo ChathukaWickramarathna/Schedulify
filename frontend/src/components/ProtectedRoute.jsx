@@ -7,7 +7,7 @@
 import { useContext } from "react";
 import { Navigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
-import { hasAnyRole } from "../utils/tokenHelper";
+import { hasAnyRole, hasRole } from "../utils/tokenHelper";
 
 /**
  * ProtectedRoute Component
@@ -17,6 +17,9 @@ import { hasAnyRole } from "../utils/tokenHelper";
  * - requiredRoles: Array of allowed roles (optional)
  *   If not provided, only authentication is required
  *   If provided, user must have at least one of these roles
+ * - strictRoles: Boolean (optional, default: false)
+ *   If true, ONLY users with exactly these roles can access
+ *   (prevents STAFF/ADMIN from accessing USER routes)
  *
  * Behavior:
  * - If not authenticated: redirects to /login
@@ -26,9 +29,9 @@ import { hasAnyRole } from "../utils/tokenHelper";
  *
  * Usage:
  * <Route path="/admin" element={<ProtectedRoute element={<AdminDash />} requiredRoles={["ADMIN"]} />} />
- * <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+ * <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} requiredRoles={["USER"]} strictRoles={true} />} />
  */
-export default function ProtectedRoute({ element, requiredRoles = null }) {
+export default function ProtectedRoute({ element, requiredRoles = null, strictRoles = false }) {
   const { isAuthenticated, isLoading, user } = useContext(AuthContext);
 
   // Show loading state while session is being restored
@@ -53,12 +56,28 @@ export default function ProtectedRoute({ element, requiredRoles = null }) {
 
   // If specific roles are required, check user permissions
   if (requiredRoles && requiredRoles.length > 0) {
-    // Check if user has any of the required roles
-    const hasRequiredRole = hasAnyRole(requiredRoles);
+    if (strictRoles) {
+      // Strict mode: user must have ONLY the specified roles
+      // This prevents STAFF/ADMIN from accessing USER routes
+      const hasExactRole = requiredRoles.some(role => hasRole(role));
+      const hasHigherRole = hasRole("ADMIN") || hasRole("STAFF");
 
-    if (!hasRequiredRole) {
-      // User is authenticated but doesn't have required role
-      return <Navigate to="/unauthorized" replace />;
+      // If user has a higher role and this is strict USER route, deny access
+      if (requiredRoles.includes("USER") && hasHigherRole && !hasRole("USER")) {
+        return <Navigate to="/unauthorized" replace />;
+      }
+
+      if (!hasExactRole) {
+        return <Navigate to="/unauthorized" replace />;
+      }
+    } else {
+      // Normal mode: user must have any of the required roles
+      const hasRequiredRole = hasAnyRole(requiredRoles);
+
+      if (!hasRequiredRole) {
+        // User is authenticated but doesn't have required role
+        return <Navigate to="/unauthorized" replace />;
+      }
     }
   }
 

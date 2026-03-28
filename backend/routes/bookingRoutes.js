@@ -12,7 +12,7 @@ const {
   getAvailableSlots,
 } = require("../controllers/bookingController");
 const { protect } = require("../middleware/authMiddleware");
-const { allowRoles } = require("../middleware/roleMiddleware");
+const { allowRoles, denyRoles } = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
@@ -20,11 +20,11 @@ const router = express.Router();
 // @route   GET /api/bookings/available-slots
 router.get("/available-slots", protect, getAvailableSlots);
 
-// @route   POST /api/bookings
-router.post("/", protect, createBooking);
+// @route   POST /api/bookings (Only users can create bookings, not staff/admin)
+router.post("/", protect, allowRoles("user"), createBooking);
 
-// @route   GET /api/bookings/my
-router.get("/my", protect, getMyBookings);
+// @route   GET /api/bookings/my (Only users can see their own bookings)
+router.get("/my", protect, allowRoles("user"), getMyBookings);
 
 // @route   GET /api/bookings
 router.get("/", protect, allowRoles("admin", "staff"), getAllBookings);

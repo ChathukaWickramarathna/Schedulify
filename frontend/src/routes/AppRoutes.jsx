@@ -1,4 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+import { hasRole } from "../utils/tokenHelper";
 import ProtectedRoute from "../components/ProtectedRoute";
 import UnauthorizedPage from "../pages/UnauthorizedPage";
 import LoginPage from "../pages/Auth/LoginPage";
@@ -13,6 +16,32 @@ import ManageServices from "../pages/Admin/ManageServices";
 import ManageStaff from "../pages/Admin/ManageStaff";
 import ManageRooms from "../pages/Admin/ManageRooms";
 import ManageUsers from "../pages/Admin/ManageUsers";
+
+// Smart Home Redirect Component
+const HomeRedirect = () => {
+  const { isAuthenticated, isLoading } = useContext(AuthContext);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Redirect based on role
+  if (hasRole("ADMIN")) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  if (hasRole("STAFF")) {
+    return <Navigate to="/staff/dashboard" replace />;
+  }
+  return <Navigate to="/dashboard" replace />; // USER
+};
 
 // Route placeholders (real pages will be created later)
 const Placeholder = ({ title }) => {
@@ -29,28 +58,42 @@ const Placeholder = ({ title }) => {
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route path="/" element={<HomeRedirect />} />
 
       {/* Auth */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* User - Protected Routes */}
+      {/* User - Protected Routes (Only for USER role, not STAFF/ADMIN) */}
       <Route
         path="/dashboard"
         element={
-          <ProtectedRoute element={<Dashboard />} />
+          <ProtectedRoute
+            element={<Dashboard />}
+            requiredRoles={["USER"]}
+            strictRoles={true}
+          />
         }
       />
       <Route
         path="/book-appointment"
         element={
-          <ProtectedRoute element={<BookAppointment />} />
+          <ProtectedRoute
+            element={<BookAppointment />}
+            requiredRoles={["USER"]}
+            strictRoles={true}
+          />
         }
       />
       <Route
         path="/my-bookings"
-        element={<ProtectedRoute element={<MyBookings />} />}
+        element={
+          <ProtectedRoute
+            element={<MyBookings />}
+            requiredRoles={["USER"]}
+            strictRoles={true}
+          />
+        }
       />
 
       {/* Staff - Protected Routes with Role Check */}
