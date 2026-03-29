@@ -386,7 +386,20 @@ const updateBooking = async (req, res) => {
     }
 
     // Update date and time if provided
-    if (date) booking.date = new Date(date);
+    if (date) {
+      const newDate = new Date(date);
+      // Validate date is not in the past
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to start of today
+
+      if (newDate < today) {
+        return res.status(400).json({
+          message: "Cannot book an appointment in the past. Please select a future date.",
+        });
+      }
+
+      booking.date = newDate;
+    }
     if (startTime) booking.startTime = startTime;
     if (endTime) booking.endTime = endTime;
     if (notes !== undefined) booking.notes = notes;
@@ -413,8 +426,13 @@ const updateBooking = async (req, res) => {
       });
 
       if (conflict) {
+        // Provide more specific conflict message based on what changed
+        let errorMsg = "This time slot conflicts with another booking.";
+        if (date) {
+          errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different date or time.`;
+        }
         return res.status(400).json({
-          message: "This time slot conflicts with another booking. Please choose another slot.",
+          message: errorMsg,
         });
       }
     }
