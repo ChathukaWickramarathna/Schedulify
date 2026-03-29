@@ -400,8 +400,11 @@ const updateBooking = async (req, res) => {
     // Validate room if provided
     if (roomId) {
       const room = await Room.findById(roomId);
-      if (!room || !room.isAvailable) {
-        return res.status(400).json({ message: "Selected room is not available" });
+      if (!room) {
+        return res.status(404).json({ message: "Selected room not found." });
+      }
+      if (!room.isAvailable) {
+        return res.status(400).json({ message: "Selected room is not currently available." });
       }
       booking.room = roomId;
     }
@@ -469,14 +472,16 @@ const updateBooking = async (req, res) => {
         // Provide specific conflict message based on what changed
         let errorMsg = "This time slot conflicts with another booking.";
 
-        if ((staffId || serviceId) && (date || startTime || endTime)) {
-          // Staff or service changed (with date or time change)
-          errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different staff member, service, or time slot.`;
-        } else if (staffId || serviceId) {
-          // Only staff or service changed (same date and time)
-          errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available for this time slot (${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}). Please choose a different option.`;
+        if ((staffId || serviceId || roomId) && (date || startTime || endTime)) {
+          // Staff, service, or room changed (with date or time change)
+          const resourceType = roomId ? "room" : (staffId ? "staff member" : "service");
+          errorMsg = `The selected ${resourceType} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different ${resourceType === "room" ? "room" : "option"} or time slot.`;
+        } else if (staffId || serviceId || roomId) {
+          // Only staff, service, or room changed (same date and time)
+          const resourceType = roomId ? "room" : (staffId ? "staff member" : "service");
+          errorMsg = `The selected ${resourceType} is not available for this time slot (${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}). Please choose a different ${resourceType}.`;
         } else if (date && (startTime || endTime)) {
-          // Date AND time changed (no staff/service change)
+          // Date AND time changed (no staff/service/room change)
           errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different date or time.`;
         } else if (date) {
           // Only date changed
