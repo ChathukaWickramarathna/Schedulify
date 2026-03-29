@@ -2,7 +2,8 @@ const Booking = require("../models/Booking");
 const Service = require("../models/Service");
 const Staff = require("../models/Staff");
 const Room = require("../models/Room");
-const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours, validateServiceDurationFits, validateServiceDurationWithinBusinessHours, canStaffPerformService, isValidTimeFormat, isValidDateFormat } = require("../utils/bookingHelper");
+const StaffShift = require("../models/StaffShift");
+const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours, validateServiceDurationFits, validateServiceDurationWithinBusinessHours, canStaffPerformService, isValidTimeFormat, isValidDateFormat, isStaffAvailableOnDate, isRoomAvailableOnDate } = require("../utils/bookingHelper");
 
 /**
  * @desc    Create a new booking (user)
@@ -553,6 +554,54 @@ const updateBooking = async (req, res) => {
     // Mark as edited if staff/admin is making changes (not user editing own pending)
     if (isAdminOrStaff && !isOwner) {
       booking.isEdited = true;
+    }
+
+    // Check staff availability on the specific date
+    if (booking.assignedStaff) {
+      const staff = await Staff.findById(booking.assignedStaff);
+      if (staff) {
+        // Get any staff shifts for this date
+        const staffShifts = await StaffShift.find({
+          staff: booking.assignedStaff,
+          date: {
+            $gte: new Date(booking.date).setHours(0, 0, 0, 0),
+            $lt: new Date(booking.date).setHours(23, 59, 59, 999),
+          },
+        });
+
+        const staffAvailability = isStaffAvailableOnDate(
+          staff,
+          booking.date,
+          booking.startTime,
+          booking.endTime,
+          staffShifts
+        );
+
+        if (!staffAvailability.isAvailable) {
+          return res.status(400).json({
+            message: staffAvailability.reason,
+          });
+        }
+      }
+    }
+
+    // Check room availability on the specific date
+    if (booking.room) {
+      const room = await Room.findById(booking.room);
+      if (room) {
+        const roomAvailability = isRoomAvailableOnDate(
+          room,
+          booking.date,
+          booking.startTime,
+          booking.endTime
+        );
+
+        if (!roomAvailability.isAvailable) {
+          return res.status(400).json({
+            message: roomAvailability.reason,
+          });
+        }
+      }
     }
 
     // Check for conflicts if date/time changed

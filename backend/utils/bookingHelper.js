@@ -262,6 +262,220 @@ const canStaffPerformService = (staff, serviceId) => {
   return true;
 };
 
+/**
+ * Check if staff is available on a specific date and time
+ * @param {object} staff - Staff document with workSchedule and unavailableDates
+ * @param {Date} date - The date to check
+ * @param {string} startTime - Requested start time "HH:mm"
+ * @param {string} endTime - Requested end time "HH:mm"
+ * @param {array} staffShifts - Array of StaffShift documents for this staff
+ * @returns {object} { isAvailable: boolean, reason?: string }
+ */
+const isStaffAvailableOnDate = (staff, date, startTime, endTime, staffShifts = []) => {
+  if (!staff || !date) {
+    return { isAvailable: true };
+  }
+
+  // Check if staff is globally unavailable
+  if (!staff.isAvailable) {
+    return {
+      isAvailable: false,
+      reason: "This staff member is currently marked as unavailable.",
+    };
+  }
+
+  // Check if date is in unavailableDates array (holiday, leave, etc.)
+  if (staff.unavailableDates && Array.isArray(staff.unavailableDates)) {
+    const dateStr = new Date(date).toDateString();
+    const isUnavailable = staff.unavailableDates.some((ud) => {
+      const unavailableDateStr = new Date(ud.date).toDateString();
+      return unavailableDateStr === dateStr;
+    });
+
+    if (isUnavailable) {
+      const unavailableEntry = staff.unavailableDates.find(
+        (ud) => new Date(ud.date).toDateString() === dateStr
+      );
+      const reasonMap = {
+        holiday: "Holiday",
+        sick_leave: "Sick Leave",
+        annual_leave: "Annual Leave",
+        personal: "Personal Leave",
+        other: "Not Available",
+      };
+      const reason = reasonMap[unavailableEntry.reason] || "Not Available";
+      return {
+        isAvailable: false,
+        reason: `${staff.name} is on ${reason} on ${new Date(date).toLocaleDateString()}.${unavailableEntry.notes ? ` (${unavailableEntry.notes})` : ""}`,
+      };
+    }
+  }
+
+  // Get day of week (0 = Sunday, 1 = Monday, etc.)
+  const dayOfWeek = new Date(date).getDay();
+  const dayNames = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+  const dayName = dayNames[dayOfWeek];
+
+  // Check if staff has special shift for this date
+  let workingHours = null;
+  if (staffShifts && Array.isArray(staffShifts) && staffShifts.length > 0) {
+    const dateStr = new Date(date).toDateString();
+    const specialShift = staffShifts.find(
+      (shift) => new Date(shift.date).toDateString() === dateStr
+    );
+
+    if (specialShift) {
+      if (!specialShift.isWorking) {
+        return {
+          isAvailable: false,
+          reason: `${staff.name} has special arrangements on ${new Date(date).toLocaleDateString()}. (${specialShift.reason})`,
+        };
+      }
+      workingHours = {
+        startTime: specialShift.startTime,
+        endTime: specialShift.endTime,
+      };
+    }
+  }
+
+  // If no special shift, use workSchedule
+  if (!workingHours) {
+    const schedule = staff.workSchedule?.[dayName];
+    if (!schedule || !schedule.isWorking) {
+      const dayDisplay = new Date(date).toLocaleDateString("en-US", {
+        weekday: "long",
+      });
+      return {
+        isAvailable: false,
+        reason: `${staff.name} does not work on ${dayDisplay}s.`,
+      };
+    }
+    workingHours = {
+      startTime: schedule.startTime,
+      endTime: schedule.endTime,
+    };
+  }
+
+  // Check if requested time is within working hours
+  const requestedStart = timeStringToMinutes(startTime);
+  const requestedEnd = timeStringToMinutes(endTime);
+  const workStart = timeStringToMinutes(workingHours.startTime);
+  const workEnd = timeStringToMinutes(workingHours.endTime);
+
+  if (requestedStart < workStart || requestedEnd > workEnd) {
+    const dateDisplay = new Date(date).toLocaleDateString();
+    return {
+      isAvailable: false,
+      reason: `${staff.name}'s available hours on ${dateDisplay} are ${workingHours.startTime}-${workingHours.endTime}. Requested time: ${startTime}-${endTime}.`,
+    };
+  }
+
+  return { isAvailable: true };
+};
+
+/**
+ * Check if room is available on a specific date and time
+ * @param {object} room - Room document with workSchedule and unavailableDates
+ * @param {Date} date - The date to check
+ * @param {string} startTime - Requested start time "HH:mm"
+ * @param {string} endTime - Requested end time "HH:mm"
+ * @param {array} roomShifts - Array of RoomShift documents for this room (if needed in future)
+ * @returns {object} { isAvailable: boolean, reason?: string }
+ */
+const isRoomAvailableOnDate = (room, date, startTime, endTime, roomShifts = []) => {
+  if (!room || !date) {
+    return { isAvailable: true };
+  }
+
+  // Check if room is globally unavailable
+  if (!room.isAvailable) {
+    return {
+      isAvailable: false,
+      reason: "This room is currently marked as unavailable.",
+    };
+  }
+
+  // Check if date is in unavailableDates array (maintenance, cleaning, closure, etc.)
+  if (room.unavailableDates && Array.isArray(room.unavailableDates)) {
+    const dateStr = new Date(date).toDateString();
+    const isUnavailable = room.unavailableDates.some((ud) => {
+      const unavailableDateStr = new Date(ud.date).toDateString();
+      return unavailableDateStr === dateStr;
+    });
+
+    if (isUnavailable) {
+      const unavailableEntry = room.unavailableDates.find(
+        (ud) => new Date(ud.date).toDateString() === dateStr
+      );
+      const reasonMap = {
+        maintenance: "Maintenance",
+        cleaning: "Cleaning",
+        closure: "Closure",
+        other: "Not Available",
+      };
+      const reason = reasonMap[unavailableEntry.reason] || "Not Available";
+      return {
+        isAvailable: false,
+        reason: `${room.name} is unavailable on ${new Date(date).toLocaleDateString()} (${reason}).${unavailableEntry.notes ? ` ${unavailableEntry.notes}` : ""}`,
+      };
+    }
+  }
+
+  // Get day of week (0 = Sunday, 1 = Monday, etc.)
+  const dayOfWeek = new Date(date).getDay();
+  const dayNames = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+  const dayName = dayNames[dayOfWeek];
+
+  // Check room workSchedule for this day
+  const schedule = room.workSchedule?.[dayName];
+  if (!schedule || !schedule.isWorking) {
+    const dayDisplay = new Date(date).toLocaleDateString("en-US", {
+      weekday: "long",
+    });
+    return {
+      isAvailable: false,
+      reason: `${room.name} is not available on ${dayDisplay}s.`,
+    };
+  }
+
+  const workingHours = {
+    startTime: schedule.startTime,
+    endTime: schedule.endTime,
+  };
+
+  // Check if requested time is within working hours
+  const requestedStart = timeStringToMinutes(startTime);
+  const requestedEnd = timeStringToMinutes(endTime);
+  const workStart = timeStringToMinutes(workingHours.startTime);
+  const workEnd = timeStringToMinutes(workingHours.endTime);
+
+  if (requestedStart < workStart || requestedEnd > workEnd) {
+    const dateDisplay = new Date(date).toLocaleDateString();
+    return {
+      isAvailable: false,
+      reason: `${room.name}'s available hours on ${dateDisplay} are ${workingHours.startTime}-${workingHours.endTime}. Requested time: ${startTime}-${endTime}.`,
+    };
+  }
+
+  return { isAvailable: true };
+};
+
 module.exports = {
   timeStringToMinutes,
   isTimeOverlap,
@@ -274,5 +488,7 @@ module.exports = {
   canStaffPerformService,
   isValidTimeFormat,
   isValidDateFormat,
+  isStaffAvailableOnDate,
+  isRoomAvailableOnDate,
 };
 
