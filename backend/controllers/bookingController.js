@@ -370,8 +370,11 @@ const updateBooking = async (req, res) => {
     // Validate staff if provided
     if (staffId) {
       const staff = await Staff.findById(staffId);
-      if (!staff || !staff.isAvailable) {
-        return res.status(400).json({ message: "Selected staff member is not available" });
+      if (!staff) {
+        return res.status(404).json({ message: "Selected staff member not found." });
+      }
+      if (!staff.isAvailable) {
+        return res.status(400).json({ message: "Selected staff member is not currently available." });
       }
       booking.assignedStaff = staffId;
     }
@@ -448,8 +451,14 @@ const updateBooking = async (req, res) => {
         // Provide specific conflict message based on what changed
         let errorMsg = "This time slot conflicts with another booking.";
 
-        if (date && (startTime || endTime)) {
-          // Date AND time changed
+        if (staffId && (date || startTime || endTime)) {
+          // Staff changed (with date or time change)
+          errorMsg = `The selected staff member is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different staff member or time slot.`;
+        } else if (staffId) {
+          // Only staff changed (same date and time)
+          errorMsg = `The selected staff member is not available for this time slot (${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}). Please choose a different staff member.`;
+        } else if (date && (startTime || endTime)) {
+          // Date AND time changed (no staff change)
           errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different date or time.`;
         } else if (date) {
           // Only date changed
