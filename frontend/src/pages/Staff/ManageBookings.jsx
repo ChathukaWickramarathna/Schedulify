@@ -27,6 +27,9 @@ const ManageBookings = () => {
     endTime: "",
     notes: "",
     status: "",
+    service: "",
+    assignedStaff: "",
+    room: "",
   });
 
   useEffect(() => {
@@ -115,6 +118,9 @@ const ManageBookings = () => {
       endTime: booking.endTime,
       notes: booking.notes || "",
       status: booking.status,
+      service: booking.service?._id || booking.service || "",
+      assignedStaff: booking.assignedStaff?._id || booking.assignedStaff || "",
+      room: booking.room?._id || booking.room || "",
     });
     setShowEditModal(true);
   };
@@ -124,7 +130,17 @@ const ManageBookings = () => {
     try {
       setError("");
       setSuccess("");
-      await api.put(`/bookings/${selectedBooking._id}`, editForm);
+      const submitData = {
+        date: editForm.date,
+        startTime: editForm.startTime,
+        endTime: editForm.endTime,
+        notes: editForm.notes,
+        status: editForm.status,
+        ...(editForm.service && { service: editForm.service }),
+        ...(editForm.assignedStaff && { assignedStaff: editForm.assignedStaff }),
+        ...(editForm.room && { room: editForm.room }),
+      };
+      await api.put(`/bookings/${selectedBooking._id}`, submitData);
       setSuccess("Booking updated successfully");
       setShowEditModal(false);
       fetchAllBookings();
@@ -383,6 +399,54 @@ const ManageBookings = () => {
               </div>
 
               <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
+                {/* User and Booking Information Section */}
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <h4 className="font-semibold text-gray-700 mb-3">Booking Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        User Name
+                      </label>
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedBooking?.user?.name || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        User Email
+                      </label>
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedBooking?.user?.email || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Service
+                      </label>
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedBooking?.service?.name || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Staff Member
+                      </label>
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedBooking?.assignedStaff?.name || "N/A"}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Room
+                      </label>
+                      <p className="text-sm font-medium text-gray-900">
+                        {selectedBooking?.room?.name || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Editable Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">

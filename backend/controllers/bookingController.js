@@ -320,6 +320,19 @@ const updateBooking = async (req, res) => {
     const isOwner = booking.user.toString() === req.user.id;
     const isAdminOrStaff = ["admin", "staff"].includes(req.user.role);
 
+    // Check if booking status prevents editing (for both users and staff)
+    if (booking.status === "cancelled") {
+      return res.status(403).json({
+        message: "Cannot edit a cancelled booking. Please create a new booking instead.",
+      });
+    }
+
+    if (booking.status === "rejected") {
+      return res.status(403).json({
+        message: "Cannot edit a rejected booking. Please create a new booking instead.",
+      });
+    }
+
     // Users can only edit their own pending bookings
     if (isOwner && booking.status !== "pending") {
       return res.status(403).json({
@@ -327,7 +340,7 @@ const updateBooking = async (req, res) => {
       });
     }
 
-    // Check permission
+    // Check permission: owner can edit own pending, staff/admin can edit any non-cancelled/non-rejected
     if (!isOwner && !isAdminOrStaff) {
       return res.status(403).json({
         message: "You are not allowed to edit this booking",
