@@ -103,11 +103,64 @@ const hasBookingConflict = async (bookingModel, options) => {
   return hasConflict;
 };
 
+/**
+ * Calculate duration in minutes between two "HH:mm" time strings
+ * @param {string} startTime - "HH:mm" format
+ * @param {string} endTime - "HH:mm" format
+ * @returns {number} Duration in minutes
+ */
+const calculateTimeSlotDuration = (startTime, endTime) => {
+  const startMinutes = timeStringToMinutes(startTime);
+  const endMinutes = timeStringToMinutes(endTime);
+  return endMinutes - startMinutes;
+};
+
+/**
+ * Validate if a service duration fits in the available time slot
+ * @param {number} serviceDuration - Duration in minutes from service
+ * @param {string} startTime - Slot start time "HH:mm"
+ * @param {string} endTime - Slot end time "HH:mm"
+ * @returns {object} { fits: boolean, message?: string, slotDuration?: number }
+ */
+const validateServiceDurationFits = (serviceDuration, startTime, endTime) => {
+  const slotDuration = calculateTimeSlotDuration(startTime, endTime);
+
+  if (serviceDuration > slotDuration) {
+    const durationHours = Math.floor(slotDuration / 60);
+    const durationMinutes = slotDuration % 60;
+    const serviceHours = Math.floor(serviceDuration / 60);
+    const serviceMinutes = serviceDuration % 60;
+
+    let availableTimeStr = "";
+    if (durationHours > 0) {
+      availableTimeStr = `${durationHours}h ${durationMinutes}m`;
+    } else {
+      availableTimeStr = `${durationMinutes}m`;
+    }
+
+    let requiredTimeStr = "";
+    if (serviceHours > 0) {
+      requiredTimeStr = `${serviceHours}h ${serviceMinutes}m`;
+    } else {
+      requiredTimeStr = `${serviceMinutes}m`;
+    }
+
+    return {
+      fits: false,
+      message: `The selected service requires ${requiredTimeStr}, but the available time slot is only ${availableTimeStr} (${startTime}-${endTime}). Please select a service with shorter duration or adjust the time slot.`,
+    };
+  }
+
+  return { fits: true, slotDuration };
+};
+
 module.exports = {
   timeStringToMinutes,
   isTimeOverlap,
   hasBookingConflict,
   isWithinBusinessHours,
   BUSINESS_HOURS,
+  calculateTimeSlotDuration,
+  validateServiceDurationFits,
 };
 

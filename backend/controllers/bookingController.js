@@ -2,7 +2,7 @@ const Booking = require("../models/Booking");
 const Service = require("../models/Service");
 const Staff = require("../models/Staff");
 const Room = require("../models/Room");
-const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours } = require("../utils/bookingHelper");
+const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours, validateServiceDurationFits } = require("../utils/bookingHelper");
 
 /**
  * @desc    Create a new booking (user)
@@ -361,9 +361,27 @@ const updateBooking = async (req, res) => {
     // Validate service if provided
     if (serviceId) {
       const service = await Service.findById(serviceId);
-      if (!service || !service.isActive) {
-        return res.status(400).json({ message: "Selected service is not valid" });
+      if (!service) {
+        return res.status(404).json({ message: "Selected service not found." });
       }
+      if (!service.isActive) {
+        return res.status(400).json({ message: "Selected service is not currently available." });
+      }
+
+      // Validate service duration fits in the time slot
+      if (booking.startTime && booking.endTime && service.duration) {
+        const durationCheck = validateServiceDurationFits(
+          service.duration,
+          booking.startTime,
+          booking.endTime
+        );
+        if (!durationCheck.fits) {
+          return res.status(400).json({
+            message: durationCheck.message,
+          });
+        }
+      }
+
       booking.service = serviceId;
     }
 
@@ -451,14 +469,14 @@ const updateBooking = async (req, res) => {
         // Provide specific conflict message based on what changed
         let errorMsg = "This time slot conflicts with another booking.";
 
-        if (staffId && (date || startTime || endTime)) {
-          // Staff changed (with date or time change)
-          errorMsg = `The selected staff member is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different staff member or time slot.`;
-        } else if (staffId) {
-          // Only staff changed (same date and time)
-          errorMsg = `The selected staff member is not available for this time slot (${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}). Please choose a different staff member.`;
+        if ((staffId || serviceId) && (date || startTime || endTime)) {
+          // Staff or service changed (with date or time change)
+          errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different staff member, service, or time slot.`;
+        } else if (staffId || serviceId) {
+          // Only staff or service changed (same date and time)
+          errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available for this time slot (${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}). Please choose a different option.`;
         } else if (date && (startTime || endTime)) {
-          // Date AND time changed (no staff change)
+          // Date AND time changed (no staff/service change)
           errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different date or time.`;
         } else if (date) {
           // Only date changed

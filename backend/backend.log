@@ -2,9 +2,9 @@
 > backend@1.0.0 start
 > node server.js
 
-[dotenv@17.3.1] injecting env (3) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.3.1] injecting env (3) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
 Server running on port 5000
 MongoDB connected successfully
-(node:14872) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"email":1} for model "User". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:32760) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"email":1} for model "User". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
 (Use `node --trace-warnings ...` to show where the warning was created)
-(node:14872) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"email":1} for model "Staff". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:32760) [MONGOOSE] Warning: mongoose: Duplicate schema index on {"email":1} for model "Staff". This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
