@@ -2,7 +2,7 @@ const Booking = require("../models/Booking");
 const Service = require("../models/Service");
 const Staff = require("../models/Staff");
 const Room = require("../models/Room");
-const { hasBookingConflict, timeStringToMinutes } = require("../utils/bookingHelper");
+const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours } = require("../utils/bookingHelper");
 
 /**
  * @desc    Create a new booking (user)
@@ -404,6 +404,25 @@ const updateBooking = async (req, res) => {
     if (endTime) booking.endTime = endTime;
     if (notes !== undefined) booking.notes = notes;
 
+    // Validate time range (endTime must be after startTime)
+    if (booking.startTime && booking.endTime) {
+      if (booking.endTime <= booking.startTime) {
+        return res.status(400).json({
+          message: "End time must be after start time. Please select a valid time range.",
+        });
+      }
+    }
+
+    // Validate time slots are within business hours
+    if (booking.startTime && booking.endTime) {
+      const hoursCheck = isWithinBusinessHours(booking.startTime, booking.endTime);
+      if (!hoursCheck.isValid) {
+        return res.status(400).json({
+          message: hoursCheck.message,
+        });
+      }
+    }
+
     // Only admin/staff can change status
     if (status && isAdminOrStaff) {
       booking.status = status;
@@ -426,11 +445,20 @@ const updateBooking = async (req, res) => {
       });
 
       if (conflict) {
-        // Provide more specific conflict message based on what changed
+        // Provide specific conflict message based on what changed
         let errorMsg = "This time slot conflicts with another booking.";
-        if (date) {
+
+        if (date && (startTime || endTime)) {
+          // Date AND time changed
           errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different date or time.`;
+        } else if (date) {
+          // Only date changed
+          errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different date.`;
+        } else if (startTime || endTime) {
+          // Only time changed
+          errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} has a conflict at ${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}. Please choose a different time slot.`;
         }
+
         return res.status(400).json({
           message: errorMsg,
         });
