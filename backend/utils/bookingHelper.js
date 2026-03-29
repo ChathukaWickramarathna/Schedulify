@@ -214,6 +214,34 @@ const isValidDateFormat = (dateStr) => {
 };
 
 /**
+ * Validate if a service duration can fit within business hours
+ * @param {number} serviceDuration - Duration in minutes
+ * @returns {object} { canFit: boolean, message?: string }
+ */
+const validateServiceDurationWithinBusinessHours = (serviceDuration) => {
+  const businessStart = timeStringToMinutes(BUSINESS_HOURS.startTime);
+  const businessEnd = timeStringToMinutes(BUSINESS_HOURS.endTime);
+  const availableTime = businessEnd - businessStart;
+
+  if (serviceDuration > availableTime) {
+    const hoursNeeded = Math.floor(serviceDuration / 60);
+    const minutesNeeded = serviceDuration % 60;
+    let durationStr = `${hoursNeeded}h ${minutesNeeded}m`;
+
+    const businessHours = Math.floor(availableTime / 60);
+    const businessMins = availableTime % 60;
+    let availableStr = `${businessHours}h ${businessMins}m`;
+
+    return {
+      canFit: false,
+      message: `This service requires ${durationStr}, but business hours only provide ${availableStr} (${BUSINESS_HOURS.startTime}-${BUSINESS_HOURS.endTime}). This service cannot be scheduled within business hours.`,
+    };
+  }
+
+  return { canFit: true };
+};
+
+/**
  * Validate if a staff member can perform a service
  * This checks if staff has the service in their services array
  * @param {object} staff - Staff document
@@ -242,6 +270,7 @@ module.exports = {
   BUSINESS_HOURS,
   calculateTimeSlotDuration,
   validateServiceDurationFits,
+  validateServiceDurationWithinBusinessHours,
   canStaffPerformService,
   isValidTimeFormat,
   isValidDateFormat,

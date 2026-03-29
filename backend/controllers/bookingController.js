@@ -2,7 +2,7 @@ const Booking = require("../models/Booking");
 const Service = require("../models/Service");
 const Staff = require("../models/Staff");
 const Room = require("../models/Room");
-const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours, validateServiceDurationFits, canStaffPerformService, isValidTimeFormat, isValidDateFormat } = require("../utils/bookingHelper");
+const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours, validateServiceDurationFits, validateServiceDurationWithinBusinessHours, canStaffPerformService, isValidTimeFormat, isValidDateFormat } = require("../utils/bookingHelper");
 
 /**
  * @desc    Create a new booking (user)
@@ -406,6 +406,18 @@ const updateBooking = async (req, res) => {
         }
       }
 
+      // Validate service duration can fit within business hours
+      if (service.duration) {
+        const businessHoursCheck = validateServiceDurationWithinBusinessHours(
+          service.duration
+        );
+        if (!businessHoursCheck.canFit) {
+          return res.status(400).json({
+            message: businessHoursCheck.message,
+          });
+        }
+      }
+
       booking.service = serviceId;
     }
 
@@ -477,6 +489,23 @@ const updateBooking = async (req, res) => {
       if (!hoursCheck.isValid) {
         return res.status(400).json({
           message: hoursCheck.message,
+        });
+      }
+    }
+
+    // Validate status transitions - only allow specific transitions
+    if (status && status !== booking.status) {
+      const currentStatus = booking.status;
+      const validTransitions = {
+        pending: ["approved", "rejected", "cancelled"],
+        approved: ["cancelled"], // Cannot go back to pending or rejected
+        rejected: [], // Cannot change rejected bookings
+        cancelled: [], // Cannot change cancelled bookings
+      };
+
+      if (!validTransitions[currentStatus] || !validTransitions[currentStatus].includes(status)) {
+        return res.status(400).json({
+          message: `Cannot change booking status from "${currentStatus}" to "${status}". Invalid status transition. Approved bookings can only be cancelled.`,
         });
       }
     }
