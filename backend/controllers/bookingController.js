@@ -2,7 +2,7 @@ const Booking = require("../models/Booking");
 const Service = require("../models/Service");
 const Staff = require("../models/Staff");
 const Room = require("../models/Room");
-const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours, validateServiceDurationFits } = require("../utils/bookingHelper");
+const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours, validateServiceDurationFits, canStaffPerformService } = require("../utils/bookingHelper");
 
 /**
  * @desc    Create a new booking (user)
@@ -397,6 +397,16 @@ const updateBooking = async (req, res) => {
       booking.assignedStaff = staffId;
     }
 
+    // Validate staff-service compatibility if both are being changed
+    if (staffId && serviceId) {
+      const staff = await Staff.findById(staffId);
+      if (staff && !canStaffPerformService(staff, serviceId)) {
+        return res.status(400).json({
+          message: "The selected staff member is not qualified to perform this service. Please choose a different staff member or service.",
+        });
+      }
+    }
+
     // Validate room if provided
     if (roomId) {
       const room = await Room.findById(roomId);
@@ -472,23 +482,41 @@ const updateBooking = async (req, res) => {
         // Provide specific conflict message based on what changed
         let errorMsg = "This time slot conflicts with another booking.";
 
-        if ((staffId || serviceId || roomId) && (date || startTime || endTime)) {
-          // Staff, service, or room changed (with date or time change)
+        // Count how many parameters changed
+        const changedCount = [staffId, serviceId, roomId, date, startTime, endTime].filter(Boolean).length;
+
+        if (changedCount >= 4) {
+          // Multiple parameters changed: staff/service/room + date + time
+          errorMsg = `The selected resources are not available for the requested date and time (${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}). Please adjust your selections.`;
+        } else if ((staffId && roomId) && (date || startTime || endTime)) {
+          // Staff + room changed (with date or time)
+          errorMsg = `The selected staff member and room are not both available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose different resources or time.`;
+        } else if (staffId && roomId) {
+          // Staff + room changed (same date/time)
+          errorMsg = `The selected staff member and room are not both available for this time slot (${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}). Please choose different resources.`;
+        } else if ((staffId && serviceId) && (date || startTime || endTime)) {
+          // Staff + service changed (with date or time)
+          errorMsg = `The selected staff member is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose different staff or time.`;
+        } else if (staffId && serviceId) {
+          // Staff + service changed (same date/time)
+          errorMsg = `The selected staff member is not available for this time slot (${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}). Please choose different staff.`;
+        } else if ((staffId || serviceId || roomId) && (date || startTime || endTime)) {
+          // Single resource changed (with date or time)
           const resourceType = roomId ? "room" : (staffId ? "staff member" : "service");
           errorMsg = `The selected ${resourceType} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different ${resourceType === "room" ? "room" : "option"} or time slot.`;
         } else if (staffId || serviceId || roomId) {
-          // Only staff, service, or room changed (same date and time)
+          // Single resource changed (same date/time)
           const resourceType = roomId ? "room" : (staffId ? "staff member" : "service");
           errorMsg = `The selected ${resourceType} is not available for this time slot (${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}). Please choose a different ${resourceType}.`;
         } else if (date && (startTime || endTime)) {
-          // Date AND time changed (no staff/service/room change)
-          errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different date or time.`;
+          // Date AND time changed (no resource change)
+          errorMsg = `${booking.assignedStaff ? "The assigned staff member" : "The assigned room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different date or time.`;
         } else if (date) {
           // Only date changed
-          errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different date.`;
+          errorMsg = `${booking.assignedStaff ? "The assigned staff member" : "The assigned room"} is not available on ${new Date(booking.date).toLocaleDateString()} at ${booking.startTime}-${booking.endTime}. Please choose a different date.`;
         } else if (startTime || endTime) {
           // Only time changed
-          errorMsg = `${booking.assignedStaff ? "The selected staff member" : "The selected room"} has a conflict at ${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}. Please choose a different time slot.`;
+          errorMsg = `${booking.assignedStaff ? "The assigned staff member" : "The assigned room"} has a conflict at ${booking.startTime}-${booking.endTime} on ${new Date(booking.date).toLocaleDateString()}. Please choose a different time slot.`;
         }
 
         return res.status(400).json({

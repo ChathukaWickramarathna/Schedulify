@@ -154,6 +154,30 @@ const validateServiceDurationFits = (serviceDuration, startTime, endTime) => {
   return { fits: true, slotDuration };
 };
 
+/**
+ * Validate if a staff member can perform a service
+ * This is a placeholder for future implementation where Staff has a services array
+ * For now, we assume all staff can perform all services
+ * @param {object} staff - Staff document
+ * @param {string} serviceId - Service ID to check
+ * @returns {boolean} True if staff can perform service
+ */
+const canStaffPerformService = (staff, serviceId) => {
+  // Future implementation: Check if staff.services includes serviceId
+  // For now, assume all staff can perform all services
+  if (!staff || !serviceId) {
+    return true;
+  }
+  // If staff has a services array, check if service is included
+  if (staff.services && Array.isArray(staff.services)) {
+    return staff.services.some(
+      (s) => s.toString() === serviceId.toString()
+    );
+  }
+  // Default: allow (assume all staff can do all services)
+  return true;
+};
+
 module.exports = {
   timeStringToMinutes,
   isTimeOverlap,
@@ -162,5 +186,6 @@ module.exports = {
   BUSINESS_HOURS,
   calculateTimeSlotDuration,
   validateServiceDurationFits,
+  canStaffPerformService,
 };
 
