@@ -155,16 +155,72 @@ const validateServiceDurationFits = (serviceDuration, startTime, endTime) => {
 };
 
 /**
+ * Validate time format "HH:mm"
+ * @param {string} timeStr - Time string to validate
+ * @returns {object} { isValid: boolean, message?: string }
+ */
+const isValidTimeFormat = (timeStr) => {
+  if (!timeStr || typeof timeStr !== "string") {
+    return {
+      isValid: false,
+      message: "Time must be a valid string.",
+    };
+  }
+
+  // Check HH:mm format
+  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+  if (!timeRegex.test(timeStr)) {
+    return {
+      isValid: false,
+      message: "Time must be in HH:mm format (e.g., 14:00, 09:30).",
+    };
+  }
+
+  return { isValid: true };
+};
+
+/**
+ * Validate date format and ensure it's a valid date
+ * @param {string} dateStr - Date string to validate (ISO format or YYYY-MM-DD)
+ * @returns {object} { isValid: boolean, message?: string }
+ */
+const isValidDateFormat = (dateStr) => {
+  if (!dateStr || typeof dateStr !== "string") {
+    return {
+      isValid: false,
+      message: "Date must be a valid string.",
+    };
+  }
+
+  // Accept ISO format (2026-03-30) or ISO full (2026-03-30T...)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}/;
+  if (!dateRegex.test(dateStr)) {
+    return {
+      isValid: false,
+      message: "Date must be in YYYY-MM-DD format (e.g., 2026-03-30).",
+    };
+  }
+
+  // Try parsing to ensure it's a valid date
+  const parsedDate = new Date(dateStr);
+  if (isNaN(parsedDate.getTime())) {
+    return {
+      isValid: false,
+      message: "Date is not a valid date. Please select a valid date.",
+    };
+  }
+
+  return { isValid: true };
+};
+
+/**
  * Validate if a staff member can perform a service
- * This is a placeholder for future implementation where Staff has a services array
- * For now, we assume all staff can perform all services
+ * This checks if staff has the service in their services array
  * @param {object} staff - Staff document
  * @param {string} serviceId - Service ID to check
  * @returns {boolean} True if staff can perform service
  */
 const canStaffPerformService = (staff, serviceId) => {
-  // Future implementation: Check if staff.services includes serviceId
-  // For now, assume all staff can perform all services
   if (!staff || !serviceId) {
     return true;
   }
@@ -187,5 +243,7 @@ module.exports = {
   calculateTimeSlotDuration,
   validateServiceDurationFits,
   canStaffPerformService,
+  isValidTimeFormat,
+  isValidDateFormat,
 };
 

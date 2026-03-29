@@ -2,7 +2,7 @@ const Booking = require("../models/Booking");
 const Service = require("../models/Service");
 const Staff = require("../models/Staff");
 const Room = require("../models/Room");
-const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours, validateServiceDurationFits, canStaffPerformService } = require("../utils/bookingHelper");
+const { hasBookingConflict, timeStringToMinutes, isWithinBusinessHours, validateServiceDurationFits, canStaffPerformService, isValidTimeFormat, isValidDateFormat } = require("../utils/bookingHelper");
 
 /**
  * @desc    Create a new booking (user)
@@ -357,6 +357,30 @@ const updateBooking = async (req, res) => {
       notes,
       status,
     } = req.body;
+
+    // Validate date format if provided
+    if (date) {
+      const dateValidation = isValidDateFormat(date);
+      if (!dateValidation.isValid) {
+        return res.status(400).json({ message: dateValidation.message });
+      }
+    }
+
+    // Validate start time format if provided
+    if (startTime) {
+      const startTimeValidation = isValidTimeFormat(startTime);
+      if (!startTimeValidation.isValid) {
+        return res.status(400).json({ message: startTimeValidation.message });
+      }
+    }
+
+    // Validate end time format if provided
+    if (endTime) {
+      const endTimeValidation = isValidTimeFormat(endTime);
+      if (!endTimeValidation.isValid) {
+        return res.status(400).json({ message: endTimeValidation.message });
+      }
+    }
 
     // Validate service if provided
     if (serviceId) {
