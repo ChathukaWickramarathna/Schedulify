@@ -60,6 +60,11 @@ const bookingSchema = new mongoose.Schema(
       default: "",
       maxlength: 2000,
     },
+    isEdited: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   { timestamps: true }
 );

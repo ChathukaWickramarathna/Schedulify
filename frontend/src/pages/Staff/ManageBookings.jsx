@@ -56,7 +56,11 @@ const ManageBookings = () => {
 
     // Filter by status
     if (filterStatus !== "all") {
-      filtered = filtered.filter((booking) => booking.status === filterStatus);
+      if (filterStatus === "edited") {
+        filtered = filtered.filter((booking) => booking.isEdited === true);
+      } else {
+        filtered = filtered.filter((booking) => booking.status === filterStatus);
+      }
     }
 
     // Search filter
@@ -225,6 +229,7 @@ const ManageBookings = () => {
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="cancelled">Cancelled</option>
+                <option value="edited">Edited</option>
               </select>
             </div>
           </div>

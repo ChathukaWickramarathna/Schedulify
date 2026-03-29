@@ -383,6 +383,11 @@ const updateBooking = async (req, res) => {
       booking.status = status;
     }
 
+    // Mark as edited if staff/admin is making changes (not user editing own pending)
+    if (isAdminOrStaff && !isOwner) {
+      booking.isEdited = true;
+    }
+
     // Check for conflicts if date/time changed
     if (date || startTime || endTime || staffId || roomId) {
       const conflict = await hasBookingConflict(Booking, {
