@@ -16,6 +16,8 @@ import ManageServices from "../pages/Admin/ManageServices";
 import ManageStaff from "../pages/Admin/ManageStaff";
 import ManageRooms from "../pages/Admin/ManageRooms";
 import ManageUsers from "../pages/Admin/ManageUsers";
+import StaffAvailabilityManagement from "../pages/Admin/StaffAvailabilityManagement";
+import RoomAvailabilityManagement from "../pages/Admin/RoomAvailabilityManagement";
 
 // Smart Home Redirect Component
 const HomeRedirect = () => {
@@ -158,6 +160,24 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute
             element={<ManageUsers />}
+            requiredRoles={["ADMIN"]}
+          />
+        }
+      />
+      <Route
+        path="/admin/staff-availability"
+        element={
+          <ProtectedRoute
+            element={<StaffAvailabilityManagement />}
+            requiredRoles={["ADMIN"]}
+          />
+        }
+      />
+      <Route
+        path="/admin/room-availability"
+        element={
+          <ProtectedRoute
+            element={<RoomAvailabilityManagement />}
             requiredRoles={["ADMIN"]}
           />
         }

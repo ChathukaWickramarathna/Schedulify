@@ -120,6 +120,42 @@ const AdminDashboard = () => {
       bgColor: "bg-orange-50",
       textColor: "text-orange-600",
     },
+    {
+      title: "Staff Availability",
+      description: "Manage work schedules, hours, and time off for staff members",
+      icon: (
+        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      ),
+      link: "/admin/staff-availability",
+      color: "from-indigo-500 to-purple-500",
+      bgColor: "bg-indigo-50",
+      textColor: "text-indigo-600",
+    },
+    {
+      title: "Room Availability",
+      description: "Set room schedules, maintenance dates, and availability",
+      icon: (
+        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={1.5}
+            d="M8 16l2.879-2.879m0 0a3 3 0 104.243-4.243m-4.243 4.243L21 3m-9.172 9.172L3 21m9.172-9.172l4.243-4.243m0 0a3 3 0 10-4.243-4.243"
+          />
+        </svg>
+      ),
+      link: "/admin/room-availability",
+      color: "from-cyan-500 to-blue-500",
+      bgColor: "bg-cyan-50",
+      textColor: "text-cyan-600",
+    },
   ];
 
   // Chart data for booking status

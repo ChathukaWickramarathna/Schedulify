@@ -10,6 +10,7 @@ const bookingRoutes = require("./routes/bookingRoutes");
 const resourceRoutes = require("./routes/resourceRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const publicRoutes = require("./routes/publicRoutes");
+const availabilityRoutes = require("./routes/availabilityRoutes");
 
 dotenv.config();
 
@@ -39,6 +40,8 @@ app.use("/api/resources", resourceRoutes);
 app.use("/api/public", publicRoutes);
 // Dashboard routes
 app.use("/api/dashboard", dashboardRoutes);
+// Availability management routes (staff & room schedules)
+app.use("/api/availability", availabilityRoutes);
 
 // Custom error handler (should be after routes)
 app.use(errorHandler);
