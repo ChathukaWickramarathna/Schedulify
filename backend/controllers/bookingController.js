@@ -356,9 +356,44 @@ const updateBooking = async (req, res) => {
       endTime,
       notes,
       status,
+      user, // Capture user field if attempted to be modified
     } = req.body;
 
-    // Validate date format if provided
+    // Prevent user field modification
+    if (user) {
+      return res.status(400).json({
+        message: "You cannot modify the user field of a booking. Please contact support if you need to reassign this booking to a different user.",
+      });
+    }
+
+    // Validate status enum if provided
+    const validStatusValues = ["pending", "approved", "rejected", "cancelled"];
+    if (status && !validStatusValues.includes(status)) {
+      return res.status(400).json({
+        message: `Invalid status "${status}". Status must be one of: ${validStatusValues.join(", ")}.`,
+      });
+    }
+
+    // Validate required fields are not null or empty string
+    if (date !== undefined && date === "") {
+      return res.status(400).json({
+        message: "Date field cannot be empty. Please select a valid date.",
+      });
+    }
+
+    if (startTime !== undefined && startTime === "") {
+      return res.status(400).json({
+        message: "Start time cannot be empty. Please select a valid start time.",
+      });
+    }
+
+    if (endTime !== undefined && endTime === "") {
+      return res.status(400).json({
+        message: "End time cannot be empty. Please select a valid end time.",
+      });
+    }
+
+    // Notes field is allowed to be updated without any special validation (always allowed)
     if (date) {
       const dateValidation = isValidDateFormat(date);
       if (!dateValidation.isValid) {
