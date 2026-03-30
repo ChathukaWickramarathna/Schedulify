@@ -52,7 +52,15 @@ const createBooking = async (req, res) => {
       }
     }
 
-    const bookingDate = new Date(date);
+    // Parse date properly - handle both string ("2026-04-01") and Date objects
+    let bookingDate;
+    if (typeof date === 'string') {
+      const [year, month, day] = date.split('-').map(Number);
+      bookingDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+    } else {
+      bookingDate = new Date(date);
+      bookingDate.setHours(0, 0, 0, 0);
+    }
 
     // Check for conflicts with existing bookings
     let conflict;
@@ -493,7 +501,16 @@ const updateBooking = async (req, res) => {
 
     // Update date and time if provided
     if (date) {
-      const newDate = new Date(date);
+      let newDate;
+      // Parse date properly - handle both string ("2026-04-01") and Date objects
+      if (typeof date === 'string') {
+        const [year, month, day] = date.split('-').map(Number);
+        newDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+      } else {
+        newDate = new Date(date);
+        newDate.setHours(0, 0, 0, 0);
+      }
+
       // Validate date is not in the past
       const today = new Date();
       today.setHours(0, 0, 0, 0); // Set to start of today
@@ -561,11 +578,17 @@ const updateBooking = async (req, res) => {
       const staff = await Staff.findById(booking.assignedStaff);
       if (staff) {
         // Get any staff shifts for this date
+        const dateStart = new Date(booking.date);
+        dateStart.setHours(0, 0, 0, 0);
+        const dateEnd = new Date(booking.date);
+        dateEnd.setDate(dateEnd.getDate() + 1);
+        dateEnd.setHours(0, 0, 0, 0);
+
         const staffShifts = await StaffShift.find({
           staff: booking.assignedStaff,
           date: {
-            $gte: new Date(booking.date).setHours(0, 0, 0, 0),
-            $lt: new Date(booking.date).setHours(23, 59, 59, 999),
+            $gte: dateStart,
+            $lt: dateEnd,
           },
         });
 

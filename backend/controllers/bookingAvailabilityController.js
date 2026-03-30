@@ -87,11 +87,18 @@ const getAvailableDates = async (req, res) => {
 
         if (workHours) {
           // Get existing bookings for this staff on this date
+          // Use proper date range query
+          const dateStart = new Date(checkDate);
+          dateStart.setHours(0, 0, 0, 0);
+          const dateEnd = new Date(checkDate);
+          dateEnd.setDate(dateEnd.getDate() + 1);
+          dateEnd.setHours(0, 0, 0, 0);
+
           const existingBookings = await Booking.find({
             assignedStaff: staffId,
             date: {
-              $gte: new Date(checkDate).setHours(0, 0, 0, 0),
-              $lt: new Date(checkDate).setHours(23, 59, 59, 999),
+              $gte: dateStart,
+              $lt: dateEnd,
             },
             status: { $in: ["pending", "approved"] },
           });
@@ -149,9 +156,9 @@ const getAvailableSlots = async (req, res) => {
       return res.status(404).json({ message: "Staff member not found" });
     }
 
-    // Parse date
-    const selectedDate = new Date(date);
-    selectedDate.setHours(0, 0, 0, 0);
+    // Parse date properly - date comes as "2026-04-01"
+    const [year, month, day] = date.split('-').map(Number);
+    const selectedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
 
     // Get staff shifts and work hours for this date
     const staffShifts = await StaffShift.find({ staff: staffId });
@@ -186,7 +193,7 @@ const getAvailableSlots = async (req, res) => {
 
     if (!workHours) {
       return res.json({
-        date: selectedDate.toISOString().split("T")[0],
+        date: date,
         staffWorkHours: null,
         availableSlots: [],
         message: "Staff is not working on this date",
@@ -194,11 +201,15 @@ const getAvailableSlots = async (req, res) => {
     }
 
     // Get existing bookings for this staff on this date
+    // Use date range to account for timezone variations
+    const dateStart = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const dateEnd = new Date(year, month - 1, day + 1, 0, 0, 0, 0);
+
     const existingBookings = await Booking.find({
       assignedStaff: staffId,
       date: {
-        $gte: selectedDate,
-        $lt: new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000),
+        $gte: dateStart,
+        $lt: dateEnd,
       },
       status: { $in: ["pending", "approved"] },
     });
@@ -212,7 +223,7 @@ const getAvailableSlots = async (req, res) => {
     );
 
     return res.json({
-      date: selectedDate.toISOString().split("T")[0],
+      date: date,
       staffWorkHours: workHours,
       availableSlots,
     });

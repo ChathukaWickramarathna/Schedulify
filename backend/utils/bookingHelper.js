@@ -83,8 +83,28 @@ const hasBookingConflict = async (bookingModel, options) => {
     return false;
   }
 
+  // Parse date properly - handle both string ("2026-04-01") and Date objects
+  let dateObj = date;
+  if (typeof date === 'string') {
+    const [year, month, day] = date.split('-').map(Number);
+    dateObj = new Date(year, month - 1, day, 0, 0, 0, 0);
+  } else if (date instanceof Date) {
+    dateObj = new Date(date);
+    dateObj.setHours(0, 0, 0, 0);
+  }
+
+  // Create date range for entire day
+  const dateStart = new Date(dateObj);
+  dateStart.setHours(0, 0, 0, 0);
+  const dateEnd = new Date(dateObj);
+  dateEnd.setDate(dateEnd.getDate() + 1);
+  dateEnd.setHours(0, 0, 0, 0);
+
   const query = {
-    date,
+    date: {
+      $gte: dateStart,
+      $lt: dateEnd,
+    },
     status: { $in: ["pending", "approved"] }, // bookings that "block" a slot
     $or: orConditions,
   };
