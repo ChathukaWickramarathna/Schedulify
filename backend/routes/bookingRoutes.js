@@ -9,10 +9,10 @@ const {
   cancelBooking,
   approveBooking,
   rejectBooking,
-  getAvailableSlots,
 } = require("../controllers/bookingController");
 const {
   getAvailableDates,
+  getAvailableSlots,
 } = require("../controllers/bookingAvailabilityController");
 const { protect } = require("../middleware/authMiddleware");
 const { allowRoles } = require("../middleware/roleMiddleware");
