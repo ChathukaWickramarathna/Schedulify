@@ -78,7 +78,7 @@ const getAvailableDates = async (req, res) => {
             startTime: specialShift.startTime,
             endTime: specialShift.endTime,
           };
-        } else if (staff.workSchedule[dayName].isWorking) {
+        } else if (staff.workSchedule && staff.workSchedule[dayName] && staff.workSchedule[dayName].isWorking) {
           workHours = {
             startTime: staff.workSchedule[dayName].startTime,
             endTime: staff.workSchedule[dayName].endTime,
@@ -184,7 +184,7 @@ const getAvailableSlots = async (req, res) => {
         startTime: specialShift.startTime,
         endTime: specialShift.endTime,
       };
-    } else if (staff.workSchedule[dayName].isWorking) {
+    } else if (staff.workSchedule && staff.workSchedule[dayName] && staff.workSchedule[dayName].isWorking) {
       workHours = {
         startTime: staff.workSchedule[dayName].startTime,
         endTime: staff.workSchedule[dayName].endTime,
