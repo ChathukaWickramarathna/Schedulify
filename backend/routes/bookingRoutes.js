@@ -11,6 +11,9 @@ const {
   rejectBooking,
   getAvailableSlots,
 } = require("../controllers/bookingController");
+const {
+  getAvailableDates,
+} = require("../controllers/bookingAvailabilityController");
 const { protect } = require("../middleware/authMiddleware");
 const { allowRoles } = require("../middleware/roleMiddleware");
 
@@ -19,6 +22,9 @@ const router = express.Router();
 // Get available slots must be defined before routes with :id
 // @route   GET /api/bookings/available-slots
 router.get("/available-slots", protect, getAvailableSlots);
+
+// @route   GET /api/bookings/available-dates
+router.get("/available-dates", protect, getAvailableDates);
 
 // @route   POST /api/bookings (Only users can create bookings, not staff/admin)
 router.post("/", protect, allowRoles("user"), createBooking);
