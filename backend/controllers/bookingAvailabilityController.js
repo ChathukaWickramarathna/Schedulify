@@ -76,9 +76,13 @@ const getAvailableDates = async (req, res) => {
 
         // Get work hours for this day
         let workHours = null;
-        const specialShift = staffShifts.find(
-          (shift) => new Date(shift.date).toDateString() === checkDate.toDateString()
-        );
+        // Use UTC date comparison for special shifts
+        const specialShift = staffShifts.find((shift) => {
+          const shiftDate = new Date(shift.date);
+          const shiftDateUTC = new Date(Date.UTC(shiftDate.getUTCFullYear(), shiftDate.getUTCMonth(), shiftDate.getUTCDate()));
+          const checkDateUTC = new Date(Date.UTC(checkDate.getUTCFullYear(), checkDate.getUTCMonth(), checkDate.getUTCDate()));
+          return shiftDateUTC.getTime() === checkDateUTC.getTime();
+        });
 
         if (specialShift && specialShift.isWorking) {
           workHours = {
@@ -189,9 +193,13 @@ const getAvailableSlots = async (req, res) => {
     const dayName = dayNames[dayOfWeek];
 
     let workHours = null;
-    const specialShift = staffShifts.find(
-      (shift) => new Date(shift.date).toDateString() === selectedDate.toDateString()
-    );
+    // Use UTC date comparison for special shifts
+    const specialShift = staffShifts.find((shift) => {
+      const shiftDate = new Date(shift.date);
+      const shiftDateUTC = new Date(Date.UTC(shiftDate.getUTCFullYear(), shiftDate.getUTCMonth(), shiftDate.getUTCDate()));
+      const selectedDateUTC = new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), selectedDate.getUTCDate()));
+      return shiftDateUTC.getTime() === selectedDateUTC.getTime();
+    });
 
     console.log(`[Available Slots] Checking special shift...`);
     if (specialShift && specialShift.isWorking) {
