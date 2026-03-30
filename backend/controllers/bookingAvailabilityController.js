@@ -160,6 +160,8 @@ const getAvailableSlots = async (req, res) => {
     const [year, month, day] = date.split('-').map(Number);
     const selectedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
 
+    console.log(`[Available Slots] Staff: ${staff.name}, Date: ${date}, Selected Date: ${selectedDate.toDateString()}`);
+
     // Get staff shifts and work hours for this date
     const staffShifts = await StaffShift.find({ staff: staffId });
     const dayOfWeek = selectedDate.getDay();
@@ -184,14 +186,17 @@ const getAvailableSlots = async (req, res) => {
         startTime: specialShift.startTime,
         endTime: specialShift.endTime,
       };
+      console.log(`[Available Slots] Using special shift: ${workHours.startTime} - ${workHours.endTime}`);
     } else if (staff.workSchedule && staff.workSchedule[dayName] && staff.workSchedule[dayName].isWorking) {
       workHours = {
         startTime: staff.workSchedule[dayName].startTime,
         endTime: staff.workSchedule[dayName].endTime,
       };
+      console.log(`[Available Slots] Using work schedule for ${dayName}: ${workHours.startTime} - ${workHours.endTime}`);
     }
 
     if (!workHours) {
+      console.log(`[Available Slots] Staff not working on ${dayName}`);
       return res.json({
         date: date,
         staffWorkHours: null,
@@ -201,17 +206,25 @@ const getAvailableSlots = async (req, res) => {
     }
 
     // Get existing bookings for this staff on this date
-    // Use date range to account for timezone variations
+    // Create date range: from start of day to end of day
     const dateStart = new Date(year, month - 1, day, 0, 0, 0, 0);
-    const dateEnd = new Date(year, month - 1, day + 1, 0, 0, 0, 0);
+    const dateEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
 
+    console.log(`[Available Slots] Querying bookings between ${dateStart.toISOString()} and ${dateEnd.toISOString()}`);
+
+    // Query using date string matching instead of date range to avoid timezone issues
     const existingBookings = await Booking.find({
       assignedStaff: staffId,
       date: {
         $gte: dateStart,
-        $lt: dateEnd,
+        $lte: dateEnd,
       },
       status: { $in: ["pending", "approved"] },
+    }).lean(); // Use lean() for faster query since we only read the data
+
+    console.log(`[Available Slots] Found ${existingBookings.length} existing bookings`);
+    existingBookings.forEach((b, idx) => {
+      console.log(`  [${idx}] Date: ${new Date(b.date).toDateString()}, Time: ${b.startTime}-${b.endTime} (${b.status})`);
     });
 
     // Generate available time slots
@@ -221,6 +234,13 @@ const getAvailableSlots = async (req, res) => {
       parseInt(serviceDuration),
       existingBookings
     );
+
+    console.log(`[Available Slots] Generated ${availableSlots.length} available slots`);
+    if (availableSlots.length > 0) {
+      availableSlots.slice(0, 5).forEach((s) => {
+        console.log(`  - Slot: ${s.startTime}-${s.endTime}`);
+      });
+    }
 
     return res.json({
       date: date,
