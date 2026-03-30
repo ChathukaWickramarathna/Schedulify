@@ -87,18 +87,19 @@ const getAvailableDates = async (req, res) => {
 
         if (workHours) {
           // Get existing bookings for this staff on this date
-          // Use proper date range query
-          const dateStart = new Date(checkDate);
-          dateStart.setHours(0, 0, 0, 0);
-          const dateEnd = new Date(checkDate);
-          dateEnd.setDate(dateEnd.getDate() + 1);
-          dateEnd.setHours(0, 0, 0, 0);
+          // Use proper UTC date range query
+          const yr = checkDate.getUTCFullYear();
+          const mn = checkDate.getUTCMonth();
+          const dy = checkDate.getUTCDate();
+
+          const dateStart = new Date(Date.UTC(yr, mn, dy, 0, 0, 0, 0));
+          const dateEnd = new Date(Date.UTC(yr, mn, dy, 23, 59, 59, 999));
 
           const existingBookings = await Booking.find({
             assignedStaff: staffId,
             date: {
               $gte: dateStart,
-              $lt: dateEnd,
+              $lte: dateEnd,
             },
             status: { $in: ["pending", "approved"] },
           });
@@ -206,25 +207,26 @@ const getAvailableSlots = async (req, res) => {
     }
 
     // Get existing bookings for this staff on this date
-    // Create date range: from start of day to end of day
-    const dateStart = new Date(year, month - 1, day, 0, 0, 0, 0);
-    const dateEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
+    // Create consistent UTC date range
+    // Convert "2026-04-01" to start and end of that day in UTC
+    const [yr, mn, dy] = date.split('-').map(Number);
+    const dayStart = new Date(Date.UTC(yr, mn - 1, dy, 0, 0, 0, 0));
+    const dayEnd = new Date(Date.UTC(yr, mn - 1, dy, 23, 59, 59, 999));
 
-    console.log(`[Available Slots] Querying bookings between ${dateStart.toISOString()} and ${dateEnd.toISOString()}`);
+    console.log(`[Available Slots] Query date range: ${dayStart.toISOString()} to ${dayEnd.toISOString()}`);
 
-    // Query using date string matching instead of date range to avoid timezone issues
     const existingBookings = await Booking.find({
       assignedStaff: staffId,
       date: {
-        $gte: dateStart,
-        $lte: dateEnd,
+        $gte: dayStart,
+        $lte: dayEnd,
       },
       status: { $in: ["pending", "approved"] },
-    }).lean(); // Use lean() for faster query since we only read the data
+    }).lean();
 
     console.log(`[Available Slots] Found ${existingBookings.length} existing bookings`);
     existingBookings.forEach((b, idx) => {
-      console.log(`  [${idx}] Date: ${new Date(b.date).toDateString()}, Time: ${b.startTime}-${b.endTime} (${b.status})`);
+      console.log(`  [${idx}] Date: ${new Date(b.date).toISOString()}, Time: ${b.startTime}-${b.endTime} (${b.status})`);
     });
 
     // Generate available time slots
