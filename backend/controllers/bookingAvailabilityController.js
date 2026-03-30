@@ -37,12 +37,18 @@ const getAvailableDates = async (req, res) => {
     // Calculate available dates for next N days
     const availableDates = [];
     const unavailableDateReasons = {};
+    // Use UTC for consistency
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayUTC = new Date(Date.UTC(
+      today.getUTCFullYear(),
+      today.getUTCMonth(),
+      today.getUTCDate(),
+      0, 0, 0, 0
+    ));
 
     for (let i = 0; i < parseInt(daysAhead); i++) {
-      const checkDate = new Date(today);
-      checkDate.setDate(checkDate.getDate() + i);
+      const checkDate = new Date(todayUTC);
+      checkDate.setUTCDate(checkDate.getUTCDate() + i);
 
       // Check if staff is available on this date
       const availability = isStaffAvailableOnDate(
@@ -55,7 +61,8 @@ const getAvailableDates = async (req, res) => {
 
       if (availability.isAvailable) {
         // Check if there are any time slots available
-        const dayOfWeek = checkDate.getDay();
+        // Use UTC day of week
+        const dayOfWeek = checkDate.getUTCDay();
         const dayNames = [
           "sunday",
           "monday",
@@ -159,13 +166,17 @@ const getAvailableSlots = async (req, res) => {
 
     // Parse date properly - date comes as "2026-04-01"
     const [year, month, day] = date.split('-').map(Number);
-    const selectedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+    // Use UTC to avoid timezone issues - this ensures consistent day-of-week calculation
+    const selectedDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
 
-    console.log(`[Available Slots] Staff: ${staff.name}, Date: ${date}, Selected Date: ${selectedDate.toDateString()}`);
+    console.log(`[Available Slots] Staff: ${staff.name}, Date: ${date}`);
+    console.log(`[Available Slots] Selected Date (UTC): ${selectedDate.toUTCString()}`);
+    console.log(`[Available Slots] Day of week (UTC): ${selectedDate.getUTCDay()}`);
 
     // Get staff shifts and work hours for this date
     const staffShifts = await StaffShift.find({ staff: staffId });
-    const dayOfWeek = selectedDate.getDay();
+    // Use UTC day of week: 0=Sunday, 1=Monday, ..., 6=Saturday
+    const dayOfWeek = selectedDate.getUTCDay();
     const dayNames = [
       "sunday",
       "monday",
@@ -182,18 +193,34 @@ const getAvailableSlots = async (req, res) => {
       (shift) => new Date(shift.date).toDateString() === selectedDate.toDateString()
     );
 
+    console.log(`[Available Slots] Checking special shift...`);
     if (specialShift && specialShift.isWorking) {
       workHours = {
         startTime: specialShift.startTime,
         endTime: specialShift.endTime,
       };
       console.log(`[Available Slots] Using special shift: ${workHours.startTime} - ${workHours.endTime}`);
-    } else if (staff.workSchedule && staff.workSchedule[dayName] && staff.workSchedule[dayName].isWorking) {
-      workHours = {
-        startTime: staff.workSchedule[dayName].startTime,
-        endTime: staff.workSchedule[dayName].endTime,
-      };
-      console.log(`[Available Slots] Using work schedule for ${dayName}: ${workHours.startTime} - ${workHours.endTime}`);
+    } else {
+      console.log(`[Available Slots] No special shift, checking regular workSchedule for ${dayName}...`);
+      console.log(`[Available Slots] workSchedule exists:`, !!staff.workSchedule);
+      console.log(`[Available Slots] workSchedule[${dayName}] exists:`, !!(staff.workSchedule && staff.workSchedule[dayName]));
+
+      if (staff.workSchedule && staff.workSchedule[dayName]) {
+        console.log(`[Available Slots] workSchedule[${dayName}]:`, JSON.stringify(staff.workSchedule[dayName]));
+        console.log(`[Available Slots] isWorking:`, staff.workSchedule[dayName].isWorking);
+
+        if (staff.workSchedule[dayName].isWorking) {
+          workHours = {
+            startTime: staff.workSchedule[dayName].startTime,
+            endTime: staff.workSchedule[dayName].endTime,
+          };
+          console.log(`[Available Slots] Using regular schedule: ${workHours.startTime} - ${workHours.endTime}`);
+        } else {
+          console.log(`[Available Slots] Staff not working on ${dayName}`);
+        }
+      } else {
+        console.log(`[Available Slots] workSchedule[${dayName}] not found!`);
+      }
     }
 
     if (!workHours) {
