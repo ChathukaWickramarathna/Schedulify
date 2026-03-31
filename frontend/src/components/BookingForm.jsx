@@ -27,7 +27,11 @@ const BookingForm = ({ onSuccess, onCancel }) => {
   const [availableDates, setAvailableDates] = useState([]);
   const [loadingDates, setLoadingDates] = useState(false);
   const [unavailableDateReasons, setUnavailableDateReasons] = useState({});
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  // Initialize calendar month to today's UTC month
+  const todayForCalendar = new Date();
+  const [calendarMonth, setCalendarMonth] = useState(
+    new Date(Date.UTC(todayForCalendar.getUTCFullYear(), todayForCalendar.getUTCMonth(), 1))
+  );
 
   // Fetch available services, staff, and rooms on component mount
   useEffect(() => {
@@ -173,12 +177,14 @@ const BookingForm = ({ onSuccess, onCancel }) => {
 
   // Generate calendar days for the current month
   const getCalendarDays = () => {
-    const year = calendarMonth.getFullYear();
-    const month = calendarMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
+    const year = calendarMonth.getUTCFullYear();
+    const month = calendarMonth.getUTCMonth();
+    // Create first day of month in UTC
+    const firstDay = new Date(Date.UTC(year, month, 1));
+    // Create last day of month in UTC
+    const lastDay = new Date(Date.UTC(year, month + 1, 0));
+    const daysInMonth = lastDay.getUTCDate();
+    const startingDayOfWeek = firstDay.getUTCDay();
 
     const days = [];
 
@@ -187,9 +193,9 @@ const BookingForm = ({ onSuccess, onCancel }) => {
       days.push(null);
     }
 
-    // Add days of the month
+    // Add days of the month - using UTC
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
+      const date = new Date(Date.UTC(year, month, day));
       days.push(date);
     }
 
@@ -197,11 +203,19 @@ const BookingForm = ({ onSuccess, onCancel }) => {
   };
 
   const handlePrevMonth = () => {
-    setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1));
+    setCalendarMonth(new Date(Date.UTC(
+      calendarMonth.getUTCFullYear(),
+      calendarMonth.getUTCMonth() - 1,
+      1
+    )));
   };
 
   const handleNextMonth = () => {
-    setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1));
+    setCalendarMonth(new Date(Date.UTC(
+      calendarMonth.getUTCFullYear(),
+      calendarMonth.getUTCMonth() + 1,
+      1
+    )));
   };
 
   const handleSubmit = async (e) => {
@@ -273,11 +287,19 @@ const BookingForm = ({ onSuccess, onCancel }) => {
     setError("");
     setAvailableSlots([]);
     setAvailableDates([]);
-    setCalendarMonth(new Date());
+    // Reset calendar to today's UTC month
+    const todayForReset = new Date();
+    setCalendarMonth(new Date(Date.UTC(todayForReset.getUTCFullYear(), todayForReset.getUTCMonth(), 1)));
   };
 
-  // Get today's date in YYYY-MM-DD format for min date
-  const today = new Date().toISOString().split("T")[0];
+  // Get today's date in YYYY-MM-DD format using UTC
+  const todayDate = new Date();
+  const todayUTC = new Date(Date.UTC(
+    todayDate.getUTCFullYear(),
+    todayDate.getUTCMonth(),
+    todayDate.getUTCDate()
+  ));
+  const today = todayUTC.toISOString().split("T")[0];
 
   // Get selected service details for displaying duration
   const selectedService = services.find((s) => s._id === formData.service);
@@ -291,7 +313,7 @@ const BookingForm = ({ onSuccess, onCancel }) => {
   }
 
   const calendarDays = getCalendarDays();
-  const monthName = calendarMonth.toLocaleString("default", { month: "long", year: "numeric" });
+  const monthName = new Date(Date.UTC(calendarMonth.getUTCFullYear(), calendarMonth.getUTCMonth())).toLocaleString("default", { month: "long", year: "numeric" });
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -427,10 +449,14 @@ const BookingForm = ({ onSuccess, onCancel }) => {
                         return <div key={`empty-${index}`} className="aspect-square"></div>;
                       }
 
-                      const dateString = date.toISOString().split("T")[0];
+                      const year = date.getUTCFullYear();
+                      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                      const day = String(date.getUTCDate()).padStart(2, '0');
+                      const dateString = `${year}-${month}-${day}`;
+
                       const isAvailable = isDateAvailable(dateString);
                       const isSelected = formData.date === dateString;
-                      const isPast = date < new Date(today);
+                      const isPast = dateString < today;
 
                       return (
                         <button
@@ -449,7 +475,7 @@ const BookingForm = ({ onSuccess, onCancel }) => {
                             }
                           `}
                         >
-                          <span>{date.getDate()}</span>
+                          <span>{date.getUTCDate()}</span>
                           {isAvailable && !isPast && (
                             <span className="absolute bottom-1 left-1 w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                           )}
